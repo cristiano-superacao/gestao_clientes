@@ -237,3 +237,10 @@ class WhatsAppIntegration {
         }
     }
 }
+
+// Compatibilidade com o nome esperado pela aplicação
+class WhatsAppManager extends WhatsAppIntegration {}
+
+// Exportar para escopo global
+window.WhatsAppManager = WhatsAppManager;
+window.WhatsAppIntegration = WhatsAppIntegration;

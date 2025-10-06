@@ -394,3 +394,6 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Exportar para escopo global
+window.GestaoClientesApp = GestaoClientesApp;

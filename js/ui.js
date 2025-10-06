@@ -151,8 +151,15 @@ class UIManager {
 
     hideSplashScreen() {
         setTimeout(() => {
-            document.getElementById('splash-screen')?.classList.add('hidden');
-        }, 2000);
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.classList.add('hidden');
+                // Remover completamente após a transição
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 500); // Tempo da transição CSS
+            }
+        }, 1500); // Reduzir para 1.5 segundos
     }
 
     checkInstallPrompt() {
@@ -1036,6 +1043,9 @@ class UIManager {
         });
     }
 }
+
+// Exportar para escopo global
+window.UIManager = UIManager;
 
 // Add notification styles to CSS
 const notificationStyles = `

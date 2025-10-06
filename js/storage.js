@@ -461,3 +461,6 @@ class StorageManager {
         return clientes;
     }
 }
+
+// Exportar para escopo global
+window.StorageManager = StorageManager;
