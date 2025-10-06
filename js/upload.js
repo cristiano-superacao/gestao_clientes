@@ -202,3 +202,5 @@ const uploadStyles = `
 const uploadStyleSheet = document.createElement('style');
 uploadStyleSheet.textContent = uploadStyles;
 document.head.appendChild(uploadStyleSheet);
+
+window.UploadManager = UploadManager;
