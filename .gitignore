@@ -1,0 +1,53 @@
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+.vuepress/dist
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+*.lcov
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Cache
+.cache
+.temp
+.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# Netlify
+.netlify

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de Gestão de Clientes com Envio Automático de Mensagens">
+    <meta name="theme-color" content="#004aad">
+    <title>Gestão de Clientes - Sistema Completo</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.css">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <div class="logo-icon">📱</div>
+                <h1>Gestão de Clientes</h1>
+            </div>
+            <div class="splash-loading">
+                <div class="loading-spinner"></div>
+                <p>Carregando sistema...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Banner -->
+    <div id="install-banner" class="install-banner hidden">
+        <div class="install-content">
+            <div class="install-info">
+                <span class="install-icon">📱</span>
+                <div>
+                    <strong>Instalar App</strong>
+                    <small>Adicione à tela inicial para acesso rápido</small>
+                </div>
+            </div>
+            <div class="install-actions">
+                <button id="install-button" class="btn-install">Instalar</button>
+                <button id="dismiss-install" class="btn-dismiss">×</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <button id="menu-toggle" class="menu-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="logo">
+                    <span class="logo-icon">📱</span>
+                    <h1>Gestão de Clientes</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button id="notifications-toggle" class="notifications-toggle" title="Notificações">
+                    <span class="notification-icon">🔔</span>
+                    <span id="notification-count" class="notification-count hidden">0</span>
+                </button>
+                <div class="user-menu">
+                    <div class="user-avatar">
+                        <span>👤</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-content">
+            <ul class="nav-menu">
+                <li class="nav-item active">
+                    <a href="#dashboard" class="nav-link" data-page="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#clientes" class="nav-link" data-page="clientes">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Clientes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#pagamentos" class="nav-link" data-page="pagamentos">
+                        <span class="nav-icon">💰</span>
+                        <span class="nav-text">Pagamentos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#mensagens" class="nav-link" data-page="mensagens">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-text">Mensagens</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#relatorios" class="nav-link" data-page="relatorios">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Relatórios</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#configuracoes" class="nav-link" data-page="configuracoes">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Configurações</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div class="app-info">
+                <small>v1.0.0 • Sistema de Gestão</small>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content">
+        <!-- Dashboard Page -->
+        <div id="page-dashboard" class="page active">
+            <div class="page-header">
+                <h2>Dashboard</h2>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" id="refresh-data">
+                        <span>🔄</span> Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-clientes">0</div>
+                        <div class="stat-label">Total de Clientes</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="clientes-ativos">0</div>
+                        <div class="stat-label">Clientes Ativos</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="pagamentos-mes">R$ 0,00</div>
+                        <div class="stat-label">Pagamentos do Mês</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="pagamentos-atrasados">0</div>
+                        <div class="stat-label">Pagamentos Atrasados</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>Ações Rápidas</h3>
+                <div class="action-grid">
+                    <button class="action-card" data-page="clientes" data-action="add">
+                        <span class="action-icon">➕</span>
+                        <span class="action-text">Novo Cliente</span>
+                    </button>
+                    <button class="action-card" data-page="pagamentos" data-action="add">
+                        <span class="action-icon">💳</span>
+                        <span class="action-text">Registrar Pagamento</span>
+                    </button>
+                    <button class="action-card" data-page="mensagens" data-action="send">
+                        <span class="action-icon">📱</span>
+                        <span class="action-text">Enviar Mensagem</span>
+                    </button>
+                    <button class="action-card" data-page="relatorios">
+                        <span class="action-icon">📊</span>
+                        <span class="action-text">Ver Relatórios</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="recent-activities">
+                <h3>Atividades Recentes</h3>
+                <div id="activities-list" class="activities-list">
+                    <!-- Activities will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Clientes Page -->
+        <div id="page-clientes" class="page">
+            <div class="page-header">
+                <h2>Gerenciar Clientes</h2>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="add-cliente">
+                        <span>➕</span> Novo Cliente
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <input type="text" id="search-clientes" placeholder="Buscar clientes...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-status">
+                        <option value="">Todos os Status</option>
+                        <option value="Ativo">Ativos</option>
+                        <option value="Inativo">Inativos</option>
+                    </select>
+                    <select id="filter-vencimento">
+                        <option value="">Todos os Vencimentos</option>
+                        <option value="hoje">Vence Hoje</option>
+                        <option value="amanha">Vence Amanhã</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="atrasado">Em Atraso</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Clientes List -->
+            <div class="data-table-container">
+                <table id="clientes-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>WhatsApp</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientes-tbody">
+                        <!-- Clientes will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagamentos Page -->
+        <div id="page-pagamentos" class="page">
+            <div class="page-header">
+                <h2>Controle de Pagamentos</h2>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="add-pagamento">
+                        <span>➕</span> Registrar Pagamento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagamentos List -->
+            <div class="data-table-container">
+                <table id="pagamentos-table" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Mês/Referência</th>
+                            <th>Data Pagamento</th>
+                            <th>Status</th>
+                            <th>Valor</th>
+                            <th>Comprovante</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pagamentos-tbody">
+                        <!-- Pagamentos will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mensagens Page -->
+        <div id="page-mensagens" class="page">
+            <div class="page-header">
+                <h2>Mensagens WhatsApp</h2>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" id="btn-config-whatsapp">
+                        <span>⚙️</span> Configurar Templates
+                    </button>
+                    <button class="btn btn-primary" id="btn-envio-automatico">
+                        <span>📤</span> Envio Automático
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Cards -->
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="stat-card">
+                    <h3>📱 Status da Integração</h3>
+                    <div id="whatsapp-integration-status" class="status-display">
+                        <div class="status-item">
+                            <span class="status-dot" id="backend-dot">🟡</span>
+                            <span>Backend: Verificando...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-dot" id="twilio-dot">🟡</span>
+                            <span>Twilio: Verificando...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-dot" id="fallback-dot">🟢</span>
+                            <span>WhatsApp Web: Disponível</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>📊 Estatísticas Hoje</h3>
+                    <div class="stats-content">
+                        <div class="stat-item">
+                            <strong id="msg-enviadas-hoje">0</strong>
+                            <span>Mensagens Enviadas</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong id="clientes-contactados">0</strong>
+                            <span>Clientes Contactados</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>⏰ Pendências</h3>
+                    <div class="stats-content">
+                        <div class="stat-item">
+                            <strong id="vencimentos-hoje" class="text-danger">0</strong>
+                            <span>Vencem Hoje</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong id="vencimentos-amanha" class="text-warning">0</strong>
+                            <span>Vencem Amanhã</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong id="pagamentos-atrasados" class="text-danger">0</strong>
+                            <span>Em Atraso</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>Ações Rápidas</h3>
+                <div class="action-buttons">
+                    <button class="btn btn-warning" id="btn-lembretes-vencimento">
+                        📅 Lembretes de Vencimento
+                    </button>
+                    <button class="btn btn-danger" id="btn-cobrar-atrasados">
+                        ⏰ Cobrar Atrasados
+                    </button>
+                    <button class="btn btn-success" id="btn-confirmar-pagamentos">
+                        ✅ Confirmar Pagamentos
+                    </button>
+                    <button class="btn btn-info" id="btn-mensagem-personalizada">
+                        💬 Mensagem Personalizada
+                    </button>
+                </div>
+            </div>
+
+            <!-- Message History -->
+            <div class="message-history">
+                <h3>Histórico de Mensagens</h3>
+                <div class="filters-bar">
+                    <input type="date" id="filter-data-mensagem" placeholder="Filtrar por data">
+                    <select id="filter-tipo-mensagem">
+                        <option value="">Todos os Tipos</option>
+                        <option value="lembrete">Lembretes</option>
+                        <option value="vencimento">Vencimentos</option>
+                        <option value="atraso">Atrasos</option>
+                        <option value="confirmacao">Confirmações</option>
+                        <option value="personalizada">Personalizadas</option>
+                    </select>
+                </div>
+                <div id="mensagens-list" class="mensagens-list">
+                    <!-- Messages will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div id="page-relatorios" class="page">
+            <div class="page-header">
+                <h2>Relatórios</h2>
+            </div>
+            <div class="coming-soon">
+                <h3>📊 Em Desenvolvimento</h3>
+                <p>Relatórios detalhados e gráficos serão implementados em breve.</p>
+            </div>
+        </div>
+
+        <div id="page-configuracoes" class="page">
+            <div class="page-header">
+                <h2>Configurações</h2>
+            </div>
+            <div class="coming-soon">
+                <h3>⚙️ Em Desenvolvimento</h3>
+                <p>Painel de configurações será implementado em breve.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Action Button -->
+    <button id="fab" class="fab" title="Ação rápida">
+        <span>➕</span>
+    </button>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <!-- Cliente Modal -->
+        <div id="modal-cliente" class="modal">
+            <div class="modal-header">
+                <h3 id="modal-cliente-title">Novo Cliente</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-cliente" class="modal-body">
+                <div class="form-group">
+                    <label for="cliente-nome">Nome Completo</label>
+                    <input type="text" id="cliente-nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-whatsapp">WhatsApp</label>
+                    <input type="tel" id="cliente-whatsapp" placeholder="(00) 00000-0000" required>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-vencimento">Data de Vencimento</label>
+                    <input type="date" id="cliente-vencimento" required>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-valor">Valor Mensal</label>
+                    <input type="number" id="cliente-valor" step="0.01" min="0" placeholder="0,00" required>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-status">Status</label>
+                    <select id="cliente-status" required>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Inativo">Inativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-observacoes">Observações</label>
+                    <textarea id="cliente-observacoes" rows="3" placeholder="Informações adicionais..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Pagamento Modal -->
+        <div id="modal-pagamento" class="modal">
+            <div class="modal-header">
+                <h3 id="modal-pagamento-title">Registrar Pagamento</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="form-pagamento" class="modal-body">
+                <div class="form-group">
+                    <label for="pagamento-cliente">Cliente</label>
+                    <select id="pagamento-cliente" required>
+                        <option value="">Selecione um cliente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pagamento-referencia">Mês/Referência</label>
+                    <input type="month" id="pagamento-referencia" required>
+                </div>
+                <div class="form-group">
+                    <label for="pagamento-data">Data do Pagamento</label>
+                    <input type="date" id="pagamento-data" required>
+                </div>
+                <div class="form-group">
+                    <label for="pagamento-valor">Valor Pago</label>
+                    <input type="number" id="pagamento-valor" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="pagamento-status">Status</label>
+                    <select id="pagamento-status" required>
+                        <option value="Pago">Pago</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Atrasado">Atrasado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pagamento-comprovante">Comprovante</label>
+                    <input type="file" id="pagamento-comprovante" accept="image/*,application/pdf">
+                    <small>Formatos aceitos: JPG, PNG, PDF</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Modal WhatsApp Templates -->
+        <div id="modal-whatsapp" class="modal">
+            <div class="modal-header">
+                <h3>Configurar Templates WhatsApp</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="whatsapp-status">
+                    <h4>Status da Integração</h4>
+                    <div id="whatsapp-status-info" class="status-info">
+                        <span class="status-indicator" id="status-backend">⚪</span> Backend: <span id="status-backend-text">Verificando...</span><br>
+                        <span class="status-indicator" id="status-twilio">⚪</span> Twilio: <span id="status-twilio-text">Verificando...</span><br>
+                        <span class="status-indicator" id="status-fallback">🟢</span> WhatsApp Web: <span id="status-fallback-text">Disponível</span>
+                    </div>
+                </div>
+
+                <div class="whatsapp-templates">
+                    <h4>Templates de Mensagem</h4>
+                    <p class="help-text">Variáveis disponíveis: {nome}, {valor}, {vencimento}, {dias}, {whatsapp}, {dataPagamento}</p>
+                    
+                    <div class="template-group">
+                        <label for="template-lembrete">Lembrete (1 dia antes)</label>
+                        <textarea id="template-lembrete" rows="4" placeholder="Olá {nome}! Seu pagamento vence em {dias} dia(s)..."></textarea>
+                    </div>
+                    
+                    <div class="template-group">
+                        <label for="template-vencimento">Vencimento (dia do vencimento)</label>
+                        <textarea id="template-vencimento" rows="4" placeholder="Olá {nome}! Seu pagamento vence HOJE..."></textarea>
+                    </div>
+                    
+                    <div class="template-group">
+                        <label for="template-atraso">Atraso (após vencimento)</label>
+                        <textarea id="template-atraso" rows="4" placeholder="Olá {nome}! Seu pagamento está em atraso..."></textarea>
+                    </div>
+                    
+                    <div class="template-group">
+                        <label for="template-confirmacao">Confirmação de Pagamento</label>
+                        <textarea id="template-confirmacao" rows="4" placeholder="Olá {nome}! Recebemos seu pagamento..."></textarea>
+                    </div>
+                    
+                    <div class="template-group">
+                        <label for="template-boas-vindas">Boas-vindas (novo cliente)</label>
+                        <textarea id="template-boas-vindas" rows="4" placeholder="Olá {nome}! Seja bem-vindo(a)..."></textarea>
+                    </div>
+                </div>
+
+                <div class="whatsapp-actions">
+                    <h4>Ações Automáticas</h4>
+                    <div class="action-buttons">
+                        <button type="button" class="btn btn-warning" id="btn-enviar-lembretes">
+                            📨 Enviar Lembretes Automáticos
+                        </button>
+                        <button type="button" class="btn btn-danger" id="btn-enviar-vencimentos">
+                            ⏰ Enviar Avisos de Vencimento
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btn-test-whatsapp">
+                            🧪 Testar Configuração
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Fechar</button>
+                    <button type="button" class="btn btn-primary" id="btn-salvar-templates">Salvar Templates</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/whatsapp.js"></script>
+    <script src="js/upload.js"></script>
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

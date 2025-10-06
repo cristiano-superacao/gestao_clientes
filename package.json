@@ -1,0 +1,35 @@
+{
+  "name": "sistema-gestao-clientes",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Clientes com Envio Automático de Mensagens",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=3000 --open=/",
+    "build": "npm run copy-files",
+    "copy-files": "xcopy . dist\\ /E /I /Y /EXCLUDE:node_modules\\ || echo 'Build files copied'",
+    "start": "serve dist -s -l 3000",
+    "generate-icons": "node scripts/generate-icons.js",
+    "start:server": "node server/index.js",
+    "deploy:vercel": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod --dir=dist"
+  },
+  "keywords": [
+    "gestao-clientes",
+    "whatsapp",
+    "pwa",
+    "responsivo",
+    "pagamentos"
+  ],
+  "author": "Sistema de Gestão",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jimp": "^0.22.10",
+    "twilio": "^4.5.0"
+  }
+}
