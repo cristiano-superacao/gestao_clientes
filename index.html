@@ -1,689 +1,262 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema de Gestão de Clientes com Envio Automático de Mensagens">
-    <meta name="theme-color" content="#004aad">
-    <title>Gestão de Clientes - Sistema Completo</title>
-    
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="assets/icon-192.png">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
-    
-    <!-- CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.css">
-</head>
-<body>
-    <!-- Splash Screen -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-content">
-            <div class="splash-logo">
-                <div class="logo-icon">📱</div>
-                <h1>Gestão de Clientes</h1>
-            </div>
-            <div class="splash-loading">
-                <div class="loading-spinner"></div>
-                <p>Carregando sistema...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Install Banner -->
-    <div id="install-banner" class="install-banner hidden">
-        <div class="install-content">
-            <div class="install-info">
-                <span class="install-icon">📱</span>
-                <div>
-                    <strong>Instalar App</strong>
-                    <small>Adicione à tela inicial para acesso rápido</small>
-                </div>
-            </div>
-            <div class="install-actions">
-                <button id="install-button" class="btn-install">Instalar</button>
-                <button id="dismiss-install" class="btn-dismiss">×</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button id="menu-toggle" class="menu-toggle">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="logo">
-                    <span class="logo-icon">📱</span>
-                    <h1>Gestão de Clientes</h1>
-                </div>
-            </div>
-            <div class="header-right">
-                <button id="theme-toggle" class="theme-toggle" title="Alternar tema">
-                    <span class="theme-icon">🌙</span>
-                </button>
-                <button id="notifications-toggle" class="notifications-toggle" title="Notificações">
-                    <span class="notification-icon">🔔</span>
-                    <span id="notification-count" class="notification-count hidden">0</span>
-                </button>
-                <div class="user-menu">
-                    <div class="user-avatar">
-                        <span>👤</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Sidebar -->
-    <nav id="sidebar" class="sidebar">
-        <div class="sidebar-content">
-            <ul class="nav-menu">
-                <li class="nav-item active">
-                    <a href="#dashboard" class="nav-link" data-page="dashboard">
-                        <span class="nav-icon">📊</span>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#clientes" class="nav-link" data-page="clientes">
-                        <span class="nav-icon">👥</span>
-                        <span class="nav-text">Clientes</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#pagamentos" class="nav-link" data-page="pagamentos">
-                        <span class="nav-icon">💰</span>
-                        <span class="nav-text">Pagamentos</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#mensagens" class="nav-link" data-page="mensagens">
-                        <span class="nav-icon">💬</span>
-                        <span class="nav-text">Mensagens</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#relatorios" class="nav-link" data-page="relatorios">
-                        <span class="nav-icon">📈</span>
-                        <span class="nav-text">Relatórios</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#configuracoes" class="nav-link" data-page="configuracoes">
-                        <span class="nav-icon">⚙️</span>
-                        <span class="nav-text">Configurações</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-        <div class="sidebar-footer">
-            <div class="app-info">
-                <small>v1.0.0 • Sistema de Gestão</small>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main id="main-content" class="main-content">
-        <!-- Dashboard Page -->
-        <div id="page-dashboard" class="page active">
-            <div class="page-header">
-                <h2>Dashboard</h2>
-                <div class="page-actions">
-                    <button class="btn btn-secondary" id="refresh-data">
-                        <span>🔄</span> Atualizar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="total-clientes">0</div>
-                        <div class="stat-label">Total de Clientes</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="clientes-ativos">0</div>
-                        <div class="stat-label">Clientes Ativos</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">💰</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="pagamentos-mes">R$ 0,00</div>
-                        <div class="stat-label">Pagamentos do Mês</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⚠️</div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="pagamentos-atrasados">0</div>
-                        <div class="stat-label">Pagamentos Atrasados</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3>Ações Rápidas</h3>
-                <div class="action-grid">
-                    <button class="action-card" data-page="clientes" data-action="add">
-                        <span class="action-icon">➕</span>
-                        <span class="action-text">Novo Cliente</span>
-                    </button>
-                    <button class="action-card" data-page="pagamentos" data-action="add">
-                        <span class="action-icon">💳</span>
-                        <span class="action-text">Registrar Pagamento</span>
-                    </button>
-                    <button class="action-card" data-page="mensagens" data-action="send">
-                        <span class="action-icon">📱</span>
-                        <span class="action-text">Enviar Mensagem</span>
-                    </button>
-                    <button class="action-card" data-page="relatorios">
-                        <span class="action-icon">📊</span>
-                        <span class="action-text">Ver Relatórios</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Recent Activities -->
-            <div class="recent-activities">
-                <h3>Atividades Recentes</h3>
-                <div id="activities-list" class="activities-list">
-                    <!-- Activities will be populated by JavaScript -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Clientes Page -->
-        <div id="page-clientes" class="page">
-            <div class="page-header">
-                <h2>Gerenciar Clientes</h2>
-                <div class="page-actions">
-                    <button class="btn btn-primary" id="add-cliente">
-                        <span>➕</span> Novo Cliente
-                    </button>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="filters-bar">
-                <div class="search-box">
-                    <input type="text" id="search-clientes" placeholder="Buscar clientes...">
-                    <span class="search-icon">🔍</span>
-                </div>
-                <div class="filter-group">
-                    <select id="filter-status">
-                        <option value="">Todos os Status</option>
-                        <option value="Ativo">Ativos</option>
-                        <option value="Inativo">Inativos</option>
-                    </select>
-                    <select id="filter-vencimento">
-                        <option value="">Todos os Vencimentos</option>
-                        <option value="hoje">Vence Hoje</option>
-                        <option value="amanha">Vence Amanhã</option>
-                        <option value="semana">Esta Semana</option>
-                        <option value="atrasado">Em Atraso</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Clientes List -->
-            <div class="data-table-container">
-                <table id="clientes-table" class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>WhatsApp</th>
-                            <th>Vencimento</th>
-                            <th>Status</th>
-                            <th>Valor</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientes-tbody">
-                        <!-- Clientes will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Pagamentos Page -->
-        <div id="page-pagamentos" class="page">
-            <div class="page-header">
-                <h2>Controle de Pagamentos</h2>
-                <div class="page-actions">
-                    <button class="btn btn-primary" id="add-pagamento">
-                        <span>➕</span> Registrar Pagamento
-                    </button>
-                </div>
-            </div>
-
-            <!-- Pagamentos List -->
-            <div class="data-table-container">
-                <table id="pagamentos-table" class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Mês/Referência</th>
-                            <th>Data Pagamento</th>
-                            <th>Status</th>
-                            <th>Valor</th>
-                            <th>Comprovante</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pagamentos-tbody">
-                        <!-- Pagamentos will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Mensagens Page -->
-        <div id="page-mensagens" class="page">
-            <div class="page-header">
-                <h2>Mensagens WhatsApp</h2>
-                <div class="page-actions">
-                    <button class="btn btn-secondary" id="btn-config-whatsapp">
-                        <span>⚙️</span> Configurar Templates
-                    </button>
-                    <button class="btn btn-primary" id="btn-envio-automatico">
-                        <span>📤</span> Envio Automático
-                    </button>
-                </div>
-            </div>
-
-            <!-- Status Cards -->
-            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="stat-card">
-                    <h3>📱 Status da Integração</h3>
-                    <div id="whatsapp-integration-status" class="status-display">
-                        <div class="status-item">
-                            <span class="status-dot" id="backend-dot">🟡</span>
-                            <span>Backend: Verificando...</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot" id="twilio-dot">🟡</span>
-                            <span>Twilio: Verificando...</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot" id="fallback-dot">🟢</span>
-                            <span>WhatsApp Web: Disponível</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <h3>📊 Estatísticas Hoje</h3>
-                    <div class="stats-content">
-                        <div class="stat-item">
-                            <strong id="msg-enviadas-hoje">0</strong>
-                            <span>Mensagens Enviadas</span>
-                        </div>
-                        <div class="stat-item">
-                            <strong id="clientes-contactados">0</strong>
-                            <span>Clientes Contactados</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <h3>⏰ Pendências</h3>
-                    <div class="stats-content">
-                        <div class="stat-item">
-                            <strong id="vencimentos-hoje" class="text-danger">0</strong>
-                            <span>Vencem Hoje</span>
-                        </div>
-                        <div class="stat-item">
-                            <strong id="vencimentos-amanha" class="text-warning">0</strong>
-                            <span>Vencem Amanhã</span>
-                        </div>
-                        <div class="stat-item">
-                            <strong id="pagamentos-atrasados" class="text-danger">0</strong>
-                            <span>Em Atraso</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3>Ações Rápidas</h3>
-                <div class="action-buttons">
-                    <button class="btn btn-warning" id="btn-lembretes-vencimento">
-                        📅 Lembretes de Vencimento
-                    </button>
-                    <button class="btn btn-danger" id="btn-cobrar-atrasados">
-                        ⏰ Cobrar Atrasados
-                    </button>
-                    <button class="btn btn-success" id="btn-confirmar-pagamentos">
-                        ✅ Confirmar Pagamentos
-                    </button>
-                    <button class="btn btn-info" id="btn-mensagem-personalizada">
-                        💬 Mensagem Personalizada
-                    </button>
-                </div>
-            </div>
-
-            <!-- Message History -->
-            <div class="message-history">
-                <h3>Histórico de Mensagens</h3>
-                <div class="filters-bar">
-                    <input type="date" id="filter-data-mensagem" placeholder="Filtrar por data">
-                    <select id="filter-tipo-mensagem">
-                        <option value="">Todos os Tipos</option>
-                        <option value="lembrete">Lembretes</option>
-                        <option value="vencimento">Vencimentos</option>
-                        <option value="atraso">Atrasos</option>
-                        <option value="confirmacao">Confirmações</option>
-                        <option value="personalizada">Personalizadas</option>
-                    </select>
-                </div>
-                <div id="mensagens-list" class="mensagens-list">
-                    <!-- Messages will be populated by JavaScript -->
-                </div>
-            </div>
-        </div>
-
-        <div id="page-relatorios" class="page">
-            <div class="page-header">
-                <h2>Relatórios</h2>
-            </div>
-            <div class="coming-soon">
-                <h3>📊 Em Desenvolvimento</h3>
-                <p>Relatórios detalhados e gráficos serão implementados em breve.</p>
-            </div>
-        </div>
-
-        <div id="page-configuracoes" class="page">
-            <div class="page-header">
-                <h2>Configurações</h2>
-            </div>
-            <div class="coming-soon">
-                <h3>⚙️ Em Desenvolvimento</h3>
-                <p>Painel de configurações será implementado em breve.</p>
-            </div>
-        </div>
-    </main>
-
-    <!-- Floating Action Button -->
-    <button id="fab" class="fab" title="Ação rápida">
-        <span>➕</span>
-    </button>
-
-    <!-- Modals -->
-    <div id="modal-overlay" class="modal-overlay hidden">
-        <!-- Cliente Modal -->
-        <div id="modal-cliente" class="modal">
-            <div class="modal-header">
-                <h3 id="modal-cliente-title">Novo Cliente</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="form-cliente" class="modal-body">
-                <div class="form-group">
-                    <label for="cliente-nome">Nome Completo</label>
-                    <input type="text" id="cliente-nome" required>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-whatsapp">WhatsApp</label>
-                    <input type="tel" id="cliente-whatsapp" placeholder="(00) 00000-0000" required>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-vencimento">Data de Vencimento</label>
-                    <input type="date" id="cliente-vencimento" required>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-valor">Valor Mensal</label>
-                    <input type="number" id="cliente-valor" step="0.01" min="0" placeholder="0,00" required>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-status">Status</label>
-                    <select id="cliente-status" required>
-                        <option value="Ativo">Ativo</option>
-                        <option value="Inativo">Inativo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="cliente-observacoes">Observações</label>
-                    <textarea id="cliente-observacoes" rows="3" placeholder="Informações adicionais..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Pagamento Modal -->
-        <div id="modal-pagamento" class="modal">
-            <div class="modal-header">
-                <h3 id="modal-pagamento-title">Registrar Pagamento</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="form-pagamento" class="modal-body">
-                <div class="form-group">
-                    <label for="pagamento-cliente">Cliente</label>
-                    <select id="pagamento-cliente" required>
-                        <option value="">Selecione um cliente</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="pagamento-referencia">Mês/Referência</label>
-                    <input type="month" id="pagamento-referencia" required>
-                </div>
-                <div class="form-group">
-                    <label for="pagamento-data">Data do Pagamento</label>
-                    <input type="date" id="pagamento-data" required>
-                </div>
-                <div class="form-group">
-                    <label for="pagamento-valor">Valor Pago</label>
-                    <input type="number" id="pagamento-valor" step="0.01" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label for="pagamento-status">Status</label>
-                    <select id="pagamento-status" required>
-                        <option value="Pago">Pago</option>
-                        <option value="Pendente">Pendente</option>
-                        <option value="Atrasado">Atrasado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="pagamento-comprovante">Comprovante</label>
-                    <input type="file" id="pagamento-comprovante" accept="image/*,application/pdf">
-                    <small>Formatos aceitos: JPG, PNG, PDF</small>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Modal WhatsApp Templates -->
-        <div id="modal-whatsapp" class="modal">
-            <div class="modal-header">
-                <h3>Configurar Templates WhatsApp</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="whatsapp-status">
-                    <h4>Status da Integração</h4>
-                    <div id="whatsapp-status-info" class="status-info">
-                        <span class="status-indicator" id="status-backend">⚪</span> Backend: <span id="status-backend-text">Verificando...</span><br>
-                        <span class="status-indicator" id="status-twilio">⚪</span> Twilio: <span id="status-twilio-text">Verificando...</span><br>
-                        <span class="status-indicator" id="status-fallback">🟢</span> WhatsApp Web: <span id="status-fallback-text">Disponível</span>
-                    </div>
-                </div>
-
-                <div class="whatsapp-templates">
-                    <h4>Templates de Mensagem</h4>
-                    <p class="help-text">Variáveis disponíveis: {nome}, {valor}, {vencimento}, {dias}, {whatsapp}, {dataPagamento}</p>
-                    
-                    <div class="template-group">
-                        <label for="template-lembrete">Lembrete (1 dia antes)</label>
-                        <textarea id="template-lembrete" rows="4" placeholder="Olá {nome}! Seu pagamento vence em {dias} dia(s)..."></textarea>
-                    </div>
-                    
-                    <div class="template-group">
-                        <label for="template-vencimento">Vencimento (dia do vencimento)</label>
-                        <textarea id="template-vencimento" rows="4" placeholder="Olá {nome}! Seu pagamento vence HOJE..."></textarea>
-                    </div>
-                    
-                    <div class="template-group">
-                        <label for="template-atraso">Atraso (após vencimento)</label>
-                        <textarea id="template-atraso" rows="4" placeholder="Olá {nome}! Seu pagamento está em atraso..."></textarea>
-                    </div>
-                    
-                    <div class="template-group">
-                        <label for="template-confirmacao">Confirmação de Pagamento</label>
-                        <textarea id="template-confirmacao" rows="4" placeholder="Olá {nome}! Recebemos seu pagamento..."></textarea>
-                    </div>
-                    
-                    <div class="template-group">
-                        <label for="template-boas-vindas">Boas-vindas (novo cliente)</label>
-                        <textarea id="template-boas-vindas" rows="4" placeholder="Olá {nome}! Seja bem-vindo(a)..."></textarea>
-                    </div>
-                </div>
-
-                <div class="whatsapp-actions">
-                    <h4>Ações Automáticas</h4>
-                    <div class="action-buttons">
-                        <button type="button" class="btn btn-warning" id="btn-enviar-lembretes">
-                            📨 Enviar Lembretes Automáticos
-                        </button>
-                        <button type="button" class="btn btn-danger" id="btn-enviar-vencimentos">
-                            ⏰ Enviar Avisos de Vencimento
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="btn-test-whatsapp">
-                            🧪 Testar Configuração
-                        </button>
-                    </div>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary modal-cancel">Fechar</button>
-                    <button type="button" class="btn btn-primary" id="btn-salvar-templates">Salvar Templates</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="js/storage.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/whatsapp.js"></script>
-    <script src="js/upload.js"></script>
-    <script src="js/app.js"></script>
+    <title>Gestão de Clientes</title>
+    <!-- Carrega Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilização para a fonte Inter e fundo geral */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
     <script>
-        // Inicialização da Aplicação com logs e fallback robusto
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[Init] DOM carregado, iniciando verificação de dependências...');
-
-            const splashScreen = document.getElementById('splash-screen');
-            const mainContent = document.getElementById('main-content');
-            let erroDetectado = false;
-
-            // Função para remover splash e mostrar conteúdo principal
-            function removerSplash(mensagemErro) {
-                if (splashScreen) {
-                    splashScreen.style.display = 'none';
-                }
-                if (mainContent) {
-                    mainContent.style.display = 'block';
-                }
-                if (mensagemErro) {
-                    const erroDiv = document.createElement('div');
-                    erroDiv.style.background = '#dc3545';
-                    erroDiv.style.color = '#fff';
-                    erroDiv.style.padding = '16px';
-                    erroDiv.style.margin = '16px';
-                    erroDiv.style.borderRadius = '8px';
-                    erroDiv.style.fontWeight = 'bold';
-                    erroDiv.textContent = 'Erro ao inicializar o sistema: ' + mensagemErro;
-                    mainContent?.prepend(erroDiv);
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5',
+                        'secondary': '#10b981',
+                    }
                 }
             }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
 
-            // Verificar se todas as classes estão disponíveis
-            const checkDependencies = () => {
-                const ok = window.StorageManager && window.UIManager && window.WhatsAppManager && window.GestaoClientesApp;
-                if (!ok) {
-                    console.warn('[Init] Dependências não carregadas:', {
-                        StorageManager: !!window.StorageManager,
-                        UIManager: !!window.UIManager,
-                        WhatsAppManager: !!window.WhatsAppManager,
-                        GestaoClientesApp: !!window.GestaoClientesApp
+    <div id="app" class="flex-grow p-4 md:p-8">
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-8">
+            <h1 class="text-3xl font-bold text-primary">Sistema de Gestão de Clientes</h1>
+            <p id="user-info" class="text-sm text-gray-600 mt-1">Carregando usuário...</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Coluna do Perfil do Usuário -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Meu Perfil</h2>
+                    <div id="profile-status" class="text-sm italic text-gray-500">Carregando dados do perfil...</div>
+                    <div id="profile-data" class="mt-4 hidden">
+                        <!-- Os dados do perfil serão injetados aqui -->
+                        <p class="text-gray-800"><strong class="font-medium">Nome:</strong> <span id="profile-name"></span></p>
+                        <p class="text-gray-800"><strong class="font-medium">Empresa:</strong> <span id="profile-company"></span></p>
+                    </div>
+                    <button id="save-profile-btn" class="mt-4 w-full bg-secondary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-150">
+                        Salvar Perfil Padrão
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna de Listagem de Clientes -->
+            <div class="lg:col-span-2">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Clientes Cadastrados</h2>
+                    <ul id="client-list" class="space-y-4">
+                        <li class="p-4 bg-gray-50 rounded-lg text-gray-600">Nenhum cliente encontrado.</li>
+                    </ul>
+                    <div id="client-error" class="hidden text-red-500 mt-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals e Loaders -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-white text-lg flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Inicializando...
+        </div>
+    </div>
+
+    <!-- Script principal com lógica Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais (fornecidas pelo ambiente Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId = null;
+
+        // Configuração para log de depuração do Firestore
+        setLogLevel('debug');
+        
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const userInfoEl = document.getElementById('user-info');
+        const profileStatusEl = document.getElementById('profile-status');
+        const profileDataEl = document.getElementById('profile-data');
+        const profileNameEl = document.getElementById('profile-name');
+        const profileCompanyEl = document.getElementById('profile-company');
+        const clientListEl = document.getElementById('client-list');
+        const clientErrorEl = document.getElementById('client-error');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+
+        // Função para carregar os dados do perfil do usuário
+        async function loadUserProfile() {
+            if (!db || !userId) return;
+
+            // CORREÇÃO CRÍTICA: O caminho do documento deve ter um NÚMERO PAR de segmentos (Coleção/Documento/Coleção/Documento...).
+            // O caminho anterior '.../profile' (5 segmentos) estava incorretoj
+            // Corrigido para '.../profile/data' (6 segmentos), onde 'profile' é uma coleção e 'data' é o ID do documento.
+            // Caminho completo: artifacts/{appId}/users/{userId}/profile/data
+            try {
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const profileSnap = await getDoc(profileDocRef);
+
+                if (profileSnap.exists()) {
+                    const data = profileSnap.data();
+                    profileNameEl.textContent = data.name || 'N/A';
+                    profileCompanyEl.textContent = data.company || 'N/A';
+                    profileStatusEl.textContent = 'Dados carregados.';
+                    profileDataEl.classList.remove('hidden');
+                } else {
+                    profileStatusEl.textContent = 'Perfil não encontrado. Clique em Salvar para criar um.';
+                    profileDataEl.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Erro ao carregar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao carregar: ${error.message}`;
+            }
+        }
+
+        // Função para salvar um perfil padrão
+        async function saveDefaultProfile() {
+            if (!db || !userId) return;
+
+            try {
+                // Usa o caminho corrigido
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const defaultData = {
+                    name: 'Usuário Gestor',
+                    company: 'Minha Empresa de Clientes',
+                    createdAt: serverTimestamp()
+                };
+                
+                // setDoc cria ou substitui o documento
+                await setDoc(profileDocRef, defaultData);
+                
+                profileNameEl.textContent = defaultData.name;
+                profileCompanyEl.textContent = defaultData.company;
+                profileStatusEl.textContent = 'Perfil padrão salvo com sucesso!';
+                profileDataEl.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Erro ao salvar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao salvar: ${error.message}`;
+            }
+        }
+        
+        // Listener em tempo real para a lista de clientes (exemplo de dados públicos)
+        function setupClientListener() {
+            if (!db) return;
+
+            // Caminho para dados públicos de clientes: artifacts/{appId}/public/data/clients
+            const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+            
+            // onSnapshot para escutar mudanças em tempo real
+            onSnapshot(clientsColRef, (snapshot) => {
+                const clients = [];
+                snapshot.forEach(doc => {
+                    clients.push({ id: doc.id, ...doc.data() });
+                });
+
+                clientListEl.innerHTML = '';
+                if (clients.length === 0) {
+                    clientListEl.innerHTML = '<li class="p-4 bg-gray-50 rounded-lg text-gray-600">Nenhum cliente cadastrado.</li>';
+                } else {
+                    clients.forEach(client => {
+                        const li = document.createElement('li');
+                        li.className = 'p-4 bg-primary bg-opacity-5 rounded-lg border-l-4 border-primary shadow';
+                        li.innerHTML = `
+                            <p class="text-lg font-medium text-gray-800">${client.name || 'Cliente Sem Nome'}</p>
+                            <p class="text-sm text-gray-600">ID: ${client.id}</p>
+                            <p class="text-sm text-gray-600">Email: ${client.email || 'N/A'}</p>
+                        `;
+                        clientListEl.appendChild(li);
                     });
                 }
-                return ok;
-            };
-
-            // Inicialização principal
-            const initApp = () => {
-                try {
-                    if (checkDependencies()) {
-                        console.log('[Init] Dependências carregadas, instanciando GestaoClientesApp...');
-                        window.app = new GestaoClientesApp();
-                        console.log('[Init] Aplicação inicializada com sucesso!');
-                        removerSplash();
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    erroDetectado = true;
-                    console.error('[Init] Erro ao inicializar aplicação:', error);
-                    removerSplash(error.message || error);
-                    return false;
-                }
-            };
-
-            // Tentar inicializar imediatamente
-            if (!initApp()) {
-                // Se falhar, tentar novamente após um delay
-                setTimeout(() => {
-                    if (!initApp()) {
-                        erroDetectado = true;
-                        console.warn('[Init] Aplicação não pode ser inicializada, modo fallback ativado');
-                        removerSplash('Falha ao carregar dependências principais. Tente recarregar a página.');
-                    }
-                }, 1200);
-            }
-
-            // Fallback absoluto: garantir que o splash não fique travado
-            setTimeout(() => {
-                if (!window.app && !erroDetectado) {
-                    console.error('[Init] Timeout: Aplicação não inicializada após 4s. Removendo splash por segurança.');
-                    removerSplash('Tempo limite atingido. Verifique sua conexão ou recarregue a página.');
-                }
-            }, 4000);
-        });
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => console.log('[SW] Service Worker registrado'))
-                    .catch(error => console.log('[SW] Falha ao registrar Service Worker', error));
+            }, (error) => {
+                console.error("Erro no listener de clientes:", error);
+                clientErrorEl.textContent = `Erro ao carregar clientes: ${error.message}`;
+                clientErrorEl.classList.remove('hidden');
             });
         }
+
+        // Inicialização do Firebase e Autenticação
+        window.onload = async function() {
+            try {
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Configuração do Firebase não fornecida.");
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autenticação
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Observador de estado de autenticação para configurar o app após o login
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userInfoEl.textContent = `Usuário ID: ${userId} (Autenticado)`;
+                        // Carregar perfil e clientes após autenticação
+                        loadUserProfile();
+                        setupClientListener();
+                    } else {
+                        userId = null;
+                        userInfoEl.textContent = 'Usuário: Anônimo (Não Autenticado)';
+                        profileStatusEl.textContent = 'Por favor, aguarde a autenticação.';
+                    }
+                    loadingOverlay.classList.add('hidden');
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase:", error);
+                userInfoEl.textContent = `Erro de Inicialização: ${error.message}`;
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Adiciona o evento de clique ao botão Salvar Perfil
+        saveProfileBtn.addEventListener('click', saveDefaultProfile);
+        
+        // Exemplo: Função para adicionar um novo cliente (apenas para demonstração)
+        async function addExampleClient() {
+             if (!db || !userId) return;
+             try {
+                const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+                await addDoc(clientsColRef, {
+                    name: `Novo Cliente ${Date.now() % 100}`,
+                    email: `client${Date.now() % 100}@example.com`,
+                    addedBy: userId,
+                    timestamp: serverTimestamp()
+                });
+                console.log("Cliente de exemplo adicionado.");
+             } catch (e) {
+                console.error("Erro ao adicionar cliente de exemplo: ", e);
+             }
+        }
+
+        // Adiciona um cliente de exemplo a cada 10 segundos
+        // setInterval(addExampleClient, 10000); 
+
     </script>
 </body>
 </html>

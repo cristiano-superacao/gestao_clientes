@@ -1,40 +1,27 @@
-# Build outputs
-dist/
-build/
-.next/
-.nuxt/
-.vuepress/dist
-*.local
-
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Dependencies
+# Dependências
 node_modules/
-.pnp
-.pnp.js
-
-# Runtime data
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage
-coverage/
-*.lcov
-
-# Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
 
-# Cache
-.cache
-.temp
-.tmp
+# Logs de runtime
+logs
+*.log
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos temporários
+.DS_Store
+Thumbs.db
+
+# Arquivos de build
+dist/
+build/
 
 # IDE
 .vscode/
@@ -42,12 +29,6 @@ yarn-debug.log*
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Vercel
-.vercel
-
-# Netlify
-.netlify
+# Arquivos de sistema
+*.tmp
+*.temp
