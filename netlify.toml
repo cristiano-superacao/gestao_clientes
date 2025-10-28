@@ -41,9 +41,18 @@
   package = "@netlify/plugin-lighthouse"
 
 [template.environment]
-  FIREBASE_API_KEY = "Change this to your Firebase API Key"
-  FIREBASE_AUTH_DOMAIN = "Change this to your Firebase Auth Domain"
-  FIREBASE_PROJECT_ID = "Change this to your Firebase Project ID"
-  FIREBASE_STORAGE_BUCKET = "Change this to your Firebase Storage Bucket"
-  FIREBASE_MESSAGING_SENDER_ID = "Change this to your Firebase Messaging Sender ID"
-  FIREBASE_APP_ID = "Change this to your Firebase App ID"
+  # Firebase Configuration (Optional)
+  FIREBASE_API_KEY = "AIzaSyDGpF8sOF6yE7gJQQ0FQtJ1h6NF6Bx4Y5I"
+  FIREBASE_AUTH_DOMAIN = "demo-gestao-clientes.firebaseapp.com"
+  FIREBASE_PROJECT_ID = "demo-gestao-clientes"
+  FIREBASE_STORAGE_BUCKET = "demo-gestao-clientes.appspot.com"
+  FIREBASE_MESSAGING_SENDER_ID = "987654321098"
+  FIREBASE_APP_ID = "1:987654321098:web:fedcba987654321098"
+  
+  # Neon PostgreSQL Configuration (Required)
+  DATABASE_URL = "postgresql://username:password@ep-example-123456.us-east-1.aws.neon.tech/gestao_clientes?sslmode=require"
+  
+  # Application Settings
+  NODE_ENV = "production"
+  APP_NAME = "Gestão de Clientes SENAI"
+  APP_VERSION = "3.0.0"
