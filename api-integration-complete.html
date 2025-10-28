@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Integration - Sistema de Gestão de Clientes - SENAI</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .api-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            margin: 1rem 0;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        
+        .api-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .validation-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .webhook-item {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #10b981;
+        }
+        
+        .webhook-item.inactive {
+            border-left-color: #ef4444;
+            opacity: 0.7;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .result-display {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid #e2e8f0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online { background-color: #10b981; }
+        .status-offline { background-color: #ef4444; }
+        .status-unknown { background-color: #f59e0b; }
+        
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px 8px 0 0;
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: white;
+            color: #1e293b;
+            border-bottom: 2px solid #3b82f6;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 2rem;
+            border-radius: 0 15px 15px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-white text-xl font-bold">🔌</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">API Integration</h1>
+                        <p class="text-gray-600">Sistema de Integração v3.0.0</p>
+                    </div>
+                </div>
+                
+                <!-- Connectivity Status -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <span class="status-indicator status-unknown" id="connectivity-indicator"></span>
+                        <span class="text-sm text-gray-700" id="connectivity-status">Verificando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Statistics Dashboard -->
+        <div class="stats-grid">
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl mb-2">🔌</div>
+                <div class="text-2xl font-bold text-blue-600" id="api-calls-count">0</div>
+                <div class="text-sm text-gray-600">Chamadas de API</div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl mb-2">💾</div>
+                <div class="text-2xl font-bold text-green-600" id="cache-size">0</div>
+                <div class="text-sm text-gray-600">Itens em Cache</div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl mb-2">🔗</div>
+                <div class="text-2xl font-bold text-purple-600" id="webhooks-count">0</div>
+                <div class="text-sm text-gray-600">Webhooks Ativos</div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                <div class="text-3xl mb-2">🔑</div>
+                <div class="text-2xl font-bold text-orange-600" id="api-keys-count">0</div>
+                <div class="text-sm text-gray-600">API Keys</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex space-x-1 mb-6">
+            <button class="tab-button active" onclick="switchTab('validation')">
+                🔍 Validação de Dados
+            </button>
+            <button class="tab-button" onclick="switchTab('apis')">
+                🌐 APIs Externas
+            </button>
+            <button class="tab-button" onclick="switchTab('webhooks')">
+                🔗 Webhooks
+            </button>
+            <button class="tab-button" onclick="switchTab('import')">
+                📥 Importação
+            </button>
+            <button class="tab-button" onclick="switchTab('settings')">
+                ⚙️ Configurações
+            </button>
+        </div>
+
+        <!-- Validation Tab -->
+        <div id="validation-tab" class="tab-content active">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">🔍 Validação de Dados</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- CEP Validation -->
+                <div class="validation-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📍 Validação de CEP</h3>
+                    <div class="space-y-4">
+                        <input type="text" id="cep-input" placeholder="Digite o CEP (ex: 01310-100)" 
+                               class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" maxlength="9">
+                        <button id="validate-cep" class="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            Validar CEP
+                        </button>
+                        <div id="cep-result" class="result-display" style="display: none;">
+                            <pre class="text-sm"></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CNPJ Validation -->
+                <div class="validation-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🏢 Validação de CNPJ</h3>
+                    <div class="space-y-4">
+                        <input type="text" id="cnpj-input" placeholder="Digite o CNPJ (ex: 11.222.333/0001-81)" 
+                               class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" maxlength="18">
+                        <button id="validate-cnpj" class="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors">
+                            Validar CNPJ
+                        </button>
+                        <div id="cnpj-result" class="result-display" style="display: none;">
+                            <pre class="text-sm"></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Validation -->
+                <div class="validation-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📧 Validação de Email</h3>
+                    <div class="space-y-4">
+                        <input type="email" id="email-input" placeholder="Digite o email" 
+                               class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <button id="validate-email" class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors">
+                            Validar Email
+                        </button>
+                        <div id="email-result" class="result-display" style="display: none;">
+                            <pre class="text-sm"></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Phone Validation -->
+                <div class="validation-card">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📱 Validação de Telefone</h3>
+                    <div class="space-y-4">
+                        <input type="tel" id="phone-input" placeholder="Digite o telefone (ex: 11999999999)" 
+                               class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <button id="validate-phone" class="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors">
+                            Validar Telefone
+                        </button>
+                        <div id="phone-result" class="result-display" style="display: none;">
+                            <pre class="text-sm"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Complete Client Validation -->
+            <div class="validation-card mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">👤 Validação Completa de Cliente</h3>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" id="complete-name" placeholder="Nome completo" class="p-3 border rounded-lg">
+                    <input type="email" id="complete-email" placeholder="Email" class="p-3 border rounded-lg">
+                    <input type="tel" id="complete-phone" placeholder="Telefone" class="p-3 border rounded-lg">
+                    <input type="text" id="complete-cep" placeholder="CEP" class="p-3 border rounded-lg">
+                    <input type="text" id="complete-cnpj" placeholder="CNPJ (opcional)" class="p-3 border rounded-lg">
+                    <input type="text" id="complete-company" placeholder="Empresa (opcional)" class="p-3 border rounded-lg">
+                </div>
+                <button id="validate-complete" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all">
+                    🔍 Validar Dados Completos
+                </button>
+                <div id="complete-result" class="result-display" style="display: none;">
+                    <pre class="text-sm"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- APIs Tab -->
+        <div id="apis-tab" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">🌐 APIs Externas Disponíveis</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- CEP APIs -->
+                <div class="api-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">📍</div>
+                        <h3 class="text-xl font-bold">APIs de CEP</h3>
+                    </div>
+                    <ul class="text-white/80 space-y-2 text-sm">
+                        <li>• ViaCEP - Principal</li>
+                        <li>• AwesomeAPI - Backup</li>
+                        <li>• Postmon - Alternativa</li>
+                    </ul>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="status-indicator status-online"></span>
+                        <button onclick="testAPI('cep')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- CNPJ APIs -->
+                <div class="api-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🏢</div>
+                        <h3 class="text-xl font-bold">APIs de CNPJ</h3>
+                    </div>
+                    <ul class="text-white/80 space-y-2 text-sm">
+                        <li>• ReceitaWS - Principal</li>
+                        <li>• BrasilAPI - Backup</li>
+                        <li>• ConsultaCNPJ - Alternativa</li>
+                    </ul>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="status-indicator status-online"></span>
+                        <button onclick="testAPI('cnpj')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Email APIs -->
+                <div class="api-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">📧</div>
+                        <h3 class="text-xl font-bold">APIs de Email</h3>
+                    </div>
+                    <ul class="text-white/80 space-y-2 text-sm">
+                        <li>• Hunter.io - Validação</li>
+                        <li>• Abstract API - Verificação</li>
+                        <li>• Local - Regex básico</li>
+                    </ul>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="status-indicator status-unknown"></span>
+                        <button onclick="testAPI('email')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Phone APIs -->
+                <div class="api-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">📱</div>
+                        <h3 class="text-xl font-bold">APIs de Telefone</h3>
+                    </div>
+                    <ul class="text-white/80 space-y-2 text-sm">
+                        <li>• Abstract API - Validação</li>
+                        <li>• Local - Formato BR</li>
+                        <li>• Regex - Básico</li>
+                    </ul>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="status-indicator status-unknown"></span>
+                        <button onclick="testAPI('phone')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Company APIs -->
+                <div class="api-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🏭</div>
+                        <h3 class="text-xl font-bold">APIs de Empresa</h3>
+                    </div>
+                    <ul class="text-gray-700 space-y-2 text-sm">
+                        <li>• Clearbit - Dados empresariais</li>
+                        <li>• Hunter.io - Domínios</li>
+                        <li>• Local - Cache</li>
+                    </ul>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="status-indicator status-unknown"></span>
+                        <button onclick="testAPI('company')" class="bg-white/50 px-3 py-1 rounded text-sm hover:bg-white/70">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Connectivity Test -->
+                <div class="api-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🔍</div>
+                        <h3 class="text-xl font-bold">Teste Geral</h3>
+                    </div>
+                    <p class="text-gray-700 mb-4 text-sm">
+                        Testa conectividade com todas as APIs principais
+                    </p>
+                    <button id="test-all-apis" class="w-full bg-white/50 py-2 rounded text-sm hover:bg-white/70">
+                        🧪 Testar Todas APIs
+                    </button>
+                </div>
+            </div>
+            
+            <!-- API Test Results -->
+            <div class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Resultados dos Testes</h3>
+                <div id="api-test-results" class="result-display">
+                    <p class="text-gray-500 text-center py-4">Nenhum teste executado ainda</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webhooks Tab -->
+        <div id="webhooks-tab" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">🔗 Gerenciamento de Webhooks</h2>
+            
+            <!-- Add New Webhook -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">➕ Adicionar Novo Webhook</h3>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" id="webhook-name" placeholder="Nome do webhook" class="p-3 border rounded-lg">
+                    <input type="url" id="webhook-url" placeholder="URL do webhook" class="p-3 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Eventos:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" value="client.created" class="webhook-event mr-2" checked>
+                            <span class="text-sm">Cliente Criado</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="client.updated" class="webhook-event mr-2" checked>
+                            <span class="text-sm">Cliente Atualizado</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="client.deleted" class="webhook-event mr-2" checked>
+                            <span class="text-sm">Cliente Deletado</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="backup.created" class="webhook-event mr-2">
+                            <span class="text-sm">Backup Criado</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="sync.completed" class="webhook-event mr-2">
+                            <span class="text-sm">Sync Completo</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="system.error" class="webhook-event mr-2">
+                            <span class="text-sm">Erro Sistema</span>
+                        </label>
+                    </div>
+                </div>
+                <button id="add-webhook" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                    🔗 Adicionar Webhook
+                </button>
+            </div>
+            
+            <!-- Existing Webhooks -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">📋 Webhooks Registrados</h3>
+                    <button id="test-webhook" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        🧪 Testar Webhook
+                    </button>
+                </div>
+                <div id="webhooks-list">
+                    <p class="text-gray-500 text-center py-8">Nenhum webhook registrado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="import-tab" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">📥 Importação de APIs Externas</h2>
+            
+            <!-- API Import Configuration -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">⚙️ Configurar Importação</h3>
+                <div class="space-y-4">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <input type="text" id="import-name" placeholder="Nome da importação" class="p-3 border rounded-lg">
+                        <input type="url" id="import-url" placeholder="URL da API" class="p-3 border rounded-lg">
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <select id="import-method" class="p-3 border rounded-lg">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                        </select>
+                        <input type="text" id="import-datapath" placeholder="Caminho dos dados (ex: data.results)" class="p-3 border rounded-lg">
+                    </div>
+                    <textarea id="import-headers" rows="3" placeholder="Headers JSON (opcional)" class="w-full p-3 border rounded-lg"></textarea>
+                    <textarea id="import-mapping" rows="4" placeholder="Mapeamento de campos JSON" class="w-full p-3 border rounded-lg"></textarea>
+                    <button id="test-import" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors mr-4">
+                        🧪 Testar Importação
+                    </button>
+                    <button id="execute-import" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                        📥 Executar Importação
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Import Results -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Resultados da Importação</h3>
+                <div id="import-results" class="result-display">
+                    <p class="text-gray-500 text-center py-4">Nenhuma importação executada</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">⚙️ Configurações de APIs</h2>
+            
+            <!-- API Keys Configuration -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">🔑 Chaves de API</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hunter.io API Key:</label>
+                        <div class="flex">
+                            <input type="password" id="hunter-key" placeholder="Digite sua chave do Hunter.io" 
+                                   class="flex-1 p-3 border rounded-l-lg">
+                            <button onclick="saveAPIKey('hunter')" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600">
+                                💾
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Clearbit API Key:</label>
+                        <div class="flex">
+                            <input type="password" id="clearbit-key" placeholder="Digite sua chave do Clearbit" 
+                                   class="flex-1 p-3 border rounded-l-lg">
+                            <button onclick="saveAPIKey('clearbit')" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600">
+                                💾
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Abstract API Key:</label>
+                        <div class="flex">
+                            <input type="password" id="abstract-key" placeholder="Digite sua chave do Abstract API" 
+                                   class="flex-1 p-3 border rounded-l-lg">
+                            <button onclick="saveAPIKey('abstract')" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600">
+                                💾
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cache Settings -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">💾 Configurações de Cache</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">Tempo de cache (minutos):</span>
+                        <input type="number" id="cache-timeout" value="5" min="1" max="60" class="w-20 p-2 border rounded">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">Tamanho atual do cache:</span>
+                        <span id="current-cache-size" class="font-semibold">0 itens</span>
+                    </div>
+                    <button id="clear-cache" class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        🗑️ Limpar Cache
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Rate Limiting -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">⏱️ Rate Limiting</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">Limite por minuto:</span>
+                        <input type="number" id="rate-limit" value="60" min="10" max="1000" class="w-20 p-2 border rounded">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">Chamadas atuais:</span>
+                        <span id="current-rate-limit" class="font-semibold">0/60</span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Rate limiting previne abuse das APIs e garante estabilidade do sistema.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/api-integration-manager.js"></script>
+    
+    <script>
+        // API Integration Page Controller
+        class APIIntegrationController {
+            constructor() {
+                this.apiManager = null;
+                this.init();
+            }
+            
+            async init() {
+                console.log('🔌 API Integration Controller iniciando...');
+                
+                // Wait for API manager
+                await this.waitForAPIManager();
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Update UI
+                this.updateUI();
+                
+                // Load webhooks
+                this.loadWebhooks();
+                
+                // Test connectivity
+                this.testConnectivity();
+                
+                console.log('✅ API Integration Controller inicializado');
+            }
+            
+            async waitForAPIManager() {
+                return new Promise((resolve) => {
+                    const checkManager = () => {
+                        if (window.apiIntegrationManager) {
+                            this.apiManager = window.apiIntegrationManager;
+                            resolve();
+                        } else {
+                            setTimeout(checkManager, 100);
+                        }
+                    };
+                    checkManager();
+                });
+            }
+            
+            setupEventListeners() {
+                // Validation buttons
+                document.getElementById('validate-cep')?.addEventListener('click', () => this.validateCEP());
+                document.getElementById('validate-cnpj')?.addEventListener('click', () => this.validateCNPJ());
+                document.getElementById('validate-email')?.addEventListener('click', () => this.validateEmail());
+                document.getElementById('validate-phone')?.addEventListener('click', () => this.validatePhone());
+                document.getElementById('validate-complete')?.addEventListener('click', () => this.validateComplete());
+                
+                // API tests
+                document.getElementById('test-all-apis')?.addEventListener('click', () => this.testAllAPIs());
+                
+                // Webhooks
+                document.getElementById('add-webhook')?.addEventListener('click', () => this.addWebhook());
+                document.getElementById('test-webhook')?.addEventListener('click', () => this.testWebhook());
+                
+                // Import
+                document.getElementById('test-import')?.addEventListener('click', () => this.testImport());
+                document.getElementById('execute-import')?.addEventListener('click', () => this.executeImport());
+                
+                // Settings
+                document.getElementById('clear-cache')?.addEventListener('click', () => this.clearCache());
+                
+                // Input formatting
+                document.getElementById('cep-input')?.addEventListener('input', (e) => {
+                    e.target.value = this.formatCEP(e.target.value);
+                });
+                
+                document.getElementById('cnpj-input')?.addEventListener('input', (e) => {
+                    e.target.value = this.formatCNPJ(e.target.value);
+                });
+            }
+            
+            updateUI() {
+                if (!this.apiManager) return;
+                
+                // Update stats
+                const stats = this.apiManager.getAPIStats();
+                document.getElementById('cache-size').textContent = stats.cache_size;
+                document.getElementById('webhooks-count').textContent = stats.webhooks_active;
+                document.getElementById('api-keys-count').textContent = stats.api_keys_configured;
+                document.getElementById('current-cache-size').textContent = `${stats.cache_size} itens`;
+                document.getElementById('current-rate-limit').textContent = `${stats.rate_limits}/60`;
+                
+                // Update API keys display
+                const apiKeys = this.apiManager.apiKeys;
+                if (apiKeys.hunter) document.getElementById('hunter-key').value = '••••••••';
+                if (apiKeys.clearbit) document.getElementById('clearbit-key').value = '••••••••';
+                if (apiKeys.abstract) document.getElementById('abstract-key').value = '••••••••';
+                
+                // Update every 10 seconds
+                setTimeout(() => this.updateUI(), 10000);
+            }
+            
+            async testConnectivity() {
+                const indicator = document.getElementById('connectivity-indicator');
+                const status = document.getElementById('connectivity-status');
+                
+                indicator.className = 'status-indicator status-unknown';
+                status.textContent = 'Testando...';
+                
+                try {
+                    const results = await this.apiManager.testConnectivity();
+                    const onlineAPIs = Object.values(results).filter(status => status === 'online').length;
+                    const totalAPIs = Object.keys(results).length;
+                    
+                    if (onlineAPIs === totalAPIs) {
+                        indicator.className = 'status-indicator status-online';
+                        status.textContent = 'Todas APIs Online';
+                    } else if (onlineAPIs > 0) {
+                        indicator.className = 'status-indicator status-unknown';
+                        status.textContent = `${onlineAPIs}/${totalAPIs} APIs Online`;
+                    } else {
+                        indicator.className = 'status-indicator status-offline';
+                        status.textContent = 'APIs Offline';
+                    }
+                    
+                } catch (error) {
+                    indicator.className = 'status-indicator status-offline';
+                    status.textContent = 'Erro de Conectividade';
+                }
+            }
+            
+            // Validation methods
+            async validateCEP() {
+                const input = document.getElementById('cep-input').value;
+                const result = document.getElementById('cep-result');
+                
+                if (!input) {
+                    alert('Digite um CEP');
+                    return;
+                }
+                
+                try {
+                    const data = await this.apiManager.validateCEP(input);
+                    this.showResult('cep-result', data);
+                } catch (error) {
+                    this.showError('cep-result', error.message);
+                }
+            }
+            
+            async validateCNPJ() {
+                const input = document.getElementById('cnpj-input').value;
+                
+                if (!input) {
+                    alert('Digite um CNPJ');
+                    return;
+                }
+                
+                try {
+                    const data = await this.apiManager.validateCNPJ(input);
+                    this.showResult('cnpj-result', data);
+                } catch (error) {
+                    this.showError('cnpj-result', error.message);
+                }
+            }
+            
+            async validateEmail() {
+                const input = document.getElementById('email-input').value;
+                
+                if (!input) {
+                    alert('Digite um email');
+                    return;
+                }
+                
+                try {
+                    const data = await this.apiManager.validateEmail(input);
+                    this.showResult('email-result', data);
+                } catch (error) {
+                    this.showError('email-result', error.message);
+                }
+            }
+            
+            async validatePhone() {
+                const input = document.getElementById('phone-input').value;
+                
+                if (!input) {
+                    alert('Digite um telefone');
+                    return;
+                }
+                
+                try {
+                    const data = await this.apiManager.validatePhone(input);
+                    this.showResult('phone-result', data);
+                } catch (error) {
+                    this.showError('phone-result', error.message);
+                }
+            }
+            
+            async validateComplete() {
+                const clientData = {
+                    name: document.getElementById('complete-name').value,
+                    email: document.getElementById('complete-email').value,
+                    phone: document.getElementById('complete-phone').value,
+                    cep: document.getElementById('complete-cep').value,
+                    cnpj: document.getElementById('complete-cnpj').value,
+                    company_name: document.getElementById('complete-company').value
+                };
+                
+                if (!clientData.name || !clientData.email) {
+                    alert('Nome e email são obrigatórios');
+                    return;
+                }
+                
+                try {
+                    const results = await this.apiManager.validateCompleteClient(clientData);
+                    this.showResult('complete-result', results);
+                } catch (error) {
+                    this.showError('complete-result', error.message);
+                }
+            }
+            
+            async testAllAPIs() {
+                const button = document.getElementById('test-all-apis');
+                const originalText = button.textContent;
+                
+                button.textContent = '🔄 Testando...';
+                button.disabled = true;
+                
+                try {
+                    const results = await this.apiManager.testConnectivity();
+                    this.showResult('api-test-results', results);
+                    
+                    button.textContent = '✅ Testado!';
+                } catch (error) {
+                    this.showError('api-test-results', error.message);
+                    button.textContent = '❌ Erro';
+                } finally {
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 3000);
+                }
+            }
+            
+            // Webhook methods
+            addWebhook() {
+                const name = document.getElementById('webhook-name').value;
+                const url = document.getElementById('webhook-url').value;
+                const events = Array.from(document.querySelectorAll('.webhook-event:checked')).map(cb => cb.value);
+                
+                if (!name || !url) {
+                    alert('Nome e URL são obrigatórios');
+                    return;
+                }
+                
+                try {
+                    const webhook = this.apiManager.registerWebhook({
+                        name: name,
+                        url: url,
+                        events: events
+                    });
+                    
+                    // Clear form
+                    document.getElementById('webhook-name').value = '';
+                    document.getElementById('webhook-url').value = '';
+                    
+                    // Reload webhooks list
+                    this.loadWebhooks();
+                    
+                    alert('Webhook adicionado com sucesso!');
+                    
+                } catch (error) {
+                    alert('Erro ao adicionar webhook: ' + error.message);
+                }
+            }
+            
+            loadWebhooks() {
+                if (!this.apiManager) return;
+                
+                const container = document.getElementById('webhooks-list');
+                const webhooks = this.apiManager.webhooks;
+                
+                if (webhooks.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhum webhook registrado</p>';
+                    return;
+                }
+                
+                container.innerHTML = webhooks.map(webhook => `
+                    <div class="webhook-item ${webhook.active ? '' : 'inactive'}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">${webhook.name}</h4>
+                                <p class="text-sm text-gray-600">${webhook.url}</p>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Eventos: ${webhook.events.join(', ')}
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">
+                                    Criado: ${new Date(webhook.created).toLocaleString()}
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs px-2 py-1 rounded ${webhook.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${webhook.active ? 'Ativo' : 'Inativo'}
+                                </span>
+                                <button onclick="deleteWebhook('${webhook.id}')" class="text-red-500 hover:text-red-700 text-sm">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            async testWebhook() {
+                if (!this.apiManager || this.apiManager.webhooks.length === 0) {
+                    alert('Nenhum webhook configurado');
+                    return;
+                }
+                
+                try {
+                    await this.apiManager.triggerWebhook('test.event', {
+                        message: 'Este é um webhook de teste',
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    alert('Webhook de teste enviado!');
+                } catch (error) {
+                    alert('Erro ao testar webhook: ' + error.message);
+                }
+            }
+            
+            // Import methods
+            async testImport() {
+                const config = this.getImportConfig();
+                if (!config) return;
+                
+                try {
+                    const data = await this.apiManager.importDataFromAPI(config);
+                    this.showResult('import-results', { 
+                        message: 'Teste de importação bem-sucedido',
+                        records: data.length,
+                        sample: data.slice(0, 3)
+                    });
+                } catch (error) {
+                    this.showError('import-results', error.message);
+                }
+            }
+            
+            async executeImport() {
+                const config = this.getImportConfig();
+                if (!config) return;
+                
+                if (!confirm('Confirma a importação dos dados?')) return;
+                
+                try {
+                    const data = await this.apiManager.importDataFromAPI(config);
+                    
+                    // Here you would typically save the data to your client manager
+                    this.showResult('import-results', {
+                        message: 'Importação executada com sucesso',
+                        records: data.length,
+                        data: data
+                    });
+                    
+                } catch (error) {
+                    this.showError('import-results', error.message);
+                }
+            }
+            
+            getImportConfig() {
+                const name = document.getElementById('import-name').value;
+                const url = document.getElementById('import-url').value;
+                const method = document.getElementById('import-method').value;
+                const dataPath = document.getElementById('import-datapath').value;
+                const headersText = document.getElementById('import-headers').value;
+                const mappingText = document.getElementById('import-mapping').value;
+                
+                if (!name || !url) {
+                    alert('Nome e URL são obrigatórios');
+                    return null;
+                }
+                
+                let headers = {};
+                let mapping = {};
+                
+                try {
+                    if (headersText) headers = JSON.parse(headersText);
+                    if (mappingText) mapping = JSON.parse(mappingText);
+                } catch (error) {
+                    alert('JSON inválido nos headers ou mapeamento');
+                    return null;
+                }
+                
+                return { name, url, method, dataPath, headers, mapping };
+            }
+            
+            // Settings methods
+            clearCache() {
+                if (!this.apiManager) return;
+                
+                if (confirm('Confirma a limpeza do cache?')) {
+                    this.apiManager.clearCache();
+                    this.updateUI();
+                    alert('Cache limpo com sucesso!');
+                }
+            }
+            
+            // Utility methods
+            showResult(elementId, data) {
+                const element = document.getElementById(elementId);
+                element.style.display = 'block';
+                element.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+            }
+            
+            showError(elementId, message) {
+                const element = document.getElementById(elementId);
+                element.style.display = 'block';
+                element.querySelector('pre').textContent = `Erro: ${message}`;
+                element.querySelector('pre').style.color = '#ef4444';
+            }
+            
+            formatCEP(value) {
+                const numbers = value.replace(/\D/g, '');
+                if (numbers.length <= 5) {
+                    return numbers;
+                }
+                return numbers.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+            }
+            
+            formatCNPJ(value) {
+                const numbers = value.replace(/\D/g, '');
+                return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            }
+        }
+        
+        // Global functions
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function testAPI(type) {
+            const controller = window.apiController;
+            if (!controller) return;
+            
+            switch (type) {
+                case 'cep':
+                    controller.apiManager.validateCEP('01310-100').then(data => {
+                        controller.showResult('api-test-results', { api: 'CEP', result: data });
+                    }).catch(error => {
+                        controller.showError('api-test-results', `CEP API: ${error.message}`);
+                    });
+                    break;
+                case 'cnpj':
+                    controller.apiManager.validateCNPJ('11222333000181').then(data => {
+                        controller.showResult('api-test-results', { api: 'CNPJ', result: data });
+                    }).catch(error => {
+                        controller.showError('api-test-results', `CNPJ API: ${error.message}`);
+                    });
+                    break;
+                // Add other API tests...
+            }
+        }
+        
+        function saveAPIKey(service) {
+            const controller = window.apiController;
+            if (!controller) return;
+            
+            const key = document.getElementById(service + '-key').value;
+            if (!key || key === '••••••••') return;
+            
+            controller.apiManager.setAPIKey(service, key);
+            document.getElementById(service + '-key').value = '••••••••';
+            controller.updateUI();
+            alert(`Chave do ${service} salva com sucesso!`);
+        }
+        
+        function deleteWebhook(id) {
+            const controller = window.apiController;
+            if (!controller) return;
+            
+            if (confirm('Confirma a exclusão do webhook?')) {
+                controller.apiManager.webhooks = controller.apiManager.webhooks.filter(w => w.id !== id);
+                controller.apiManager.saveWebhooks();
+                controller.loadWebhooks();
+                controller.updateUI();
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.apiController = new APIIntegrationController();
+        });
+    </script>
+</body>
+</html>

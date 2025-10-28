@@ -1,0 +1,216 @@
+{
+  "name": "Gestão de Clientes - SENAI",
+  "short_name": "Gestão Clientes",
+  "description": "Sistema completo de gestão de clientes para bar e restaurante - SENAI",
+  "version": "2.2.0",
+  "start_url": "/index-complete.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  
+  "icons": [
+    {
+      "src": "assets/images/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  
+  "screenshots": [
+    {
+      "src": "assets/images/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard principal do sistema"
+    },
+    {
+      "src": "assets/images/screenshot-mobile.png",
+      "sizes": "375x667",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Interface mobile otimizada"
+    }
+  ],
+  
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  
+  "shortcuts": [
+    {
+      "name": "Novo Cliente",
+      "short_name": "Novo",
+      "description": "Adicionar novo cliente",
+      "url": "/index-complete.html#novo-cliente",
+      "icons": [
+        {
+          "src": "assets/images/shortcut-add.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver estatísticas e relatórios",
+      "url": "/dashboard-complete.html",
+      "icons": [
+        {
+          "src": "assets/images/shortcut-dashboard.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Exportar Dados",
+      "short_name": "Exportar",
+      "description": "Exportar dados em PDF ou Excel",
+      "url": "/export-complete.html",
+      "icons": [
+        {
+          "src": "assets/images/shortcut-export.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Backup",
+      "short_name": "Backup",
+      "description": "Fazer backup dos dados",
+      "url": "/backup-complete.html",
+      "icons": [
+        {
+          "src": "assets/images/shortcut-backup.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  
+  "related_applications": [],
+  
+  "prefer_related_applications": false,
+  
+  "file_handlers": [
+    {
+      "action": "/import-complete.html",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+        "application/vnd.ms-excel": [".xls"]
+      }
+    }
+  ],
+  
+  "protocol_handlers": [
+    {
+      "protocol": "web+gestao-clientes",
+      "url": "/index-complete.html?action=%s"
+    }
+  ],
+  
+  "share_target": {
+    "action": "/import-complete.html",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "file",
+          "accept": [
+            "text/csv",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          ]
+        }
+      ]
+    }
+  },
+  
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  
+  "iarc_rating_id": "",
+  
+  "features": [
+    "offline-storage",
+    "background-sync",
+    "push-notifications",
+    "file-handling",
+    "web-share-target"
+  ],
+  
+  "custom": {
+    "firebase": {
+      "messagingSenderId": "YOUR_SENDER_ID"
+    },
+    "version_info": {
+      "build": "2.2.0-pwav1",
+      "release_date": "2024-12-19",
+      "features": [
+        "Complete offline support",
+        "Background synchronization",
+        "Push notifications ready",
+        "File import/export",
+        "Advanced caching strategies"
+      ]
+    }
+  }
+}

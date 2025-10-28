@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analytics - Sistema de Gestão de Clientes</title>
+    
+    <!-- External Resources -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        .metric-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+            border: 1px solid var(--gray-200);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-updated {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .chart-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            height: 300px;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+        .activity-item {
+            transition: all 0.2s ease;
+        }
+
+        .activity-item:hover {
+            background-color: var(--gray-100);
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 0 0 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-primary hover:text-primary-light transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-xl font-semibold text-gray-900">Dashboard Analytics</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="status-indicator" title="Sistema Online"></div>
+                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 0v6m0-6l-6 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <button onclick="window.location.reload()" 
+                            class="flex items-center px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-light transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-3xl font-bold">Dashboard Analytics</h2>
+                    <p class="text-blue-100 mt-2">Visão completa do seu sistema de gestão de clientes</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-blue-100 text-sm">Última atualização</p>
+                    <p class="text-white font-medium" id="last-update">
+                        <span class="loading-spinner inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                        Carregando...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <!-- Total Clients -->
+            <div class="metric-card rounded-xl p-6 relative">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total de Clientes</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="total-clients">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Clients This Month -->
+            <div class="metric-card rounded-xl p-6 relative">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Novos Este Mês</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="new-clients-month">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Clients This Week -->
+            <div class="metric-card rounded-xl p-6 relative">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Novos Esta Semana</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="new-clients-week">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth Rate -->
+            <div class="metric-card rounded-xl p-6 relative">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Taxa de Crescimento</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="growth-rate">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Per Day -->
+            <div class="metric-card rounded-xl p-6 relative">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Média por Dia</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="avg-clients-day">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Clients by Month Chart -->
+            <div class="chart-container">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Clientes por Mês</h3>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <div class="w-3 h-3 bg-primary rounded-full mr-2"></div>
+                        Últimos 12 meses
+                    </div>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="clients-by-month-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Clients by Weekday Chart -->
+            <div class="chart-container">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Clientes por Dia da Semana</h3>
+                    <div class="text-sm text-gray-500">Distribuição semanal</div>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="clients-by-weekday-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Growth Trend Chart -->
+        <div class="mb-8">
+            <div class="chart-container">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Crescimento Acumulado</h3>
+                    <div class="flex items-center text-sm text-gray-500">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        Total acumulado de clientes
+                    </div>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="growth-trend-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity and Domains Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Atividade Recente</h3>
+                    <button class="text-primary hover:text-primary-light text-sm font-medium">
+                        Ver Todos
+                    </button>
+                </div>
+                <div class="space-y-3" id="recent-activity-list">
+                    <!-- Loaded by JavaScript -->
+                    <div class="flex items-center justify-center py-8">
+                        <div class="loading-spinner w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full"></div>
+                        <span class="ml-2 text-gray-500">Carregando atividades...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Domains -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Domínios Mais Utilizados</h3>
+                    <span class="text-sm text-gray-500">Top 5</span>
+                </div>
+                <div class="space-y-4" id="top-domains-list">
+                    <!-- Loaded by JavaScript -->
+                    <div class="flex items-center justify-center py-8">
+                        <div class="loading-spinner w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full"></div>
+                        <span class="ml-2 text-gray-500">Carregando domínios...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <p class="text-sm text-gray-500">© 2024 Sistema de Gestão de Clientes - SENAI</p>
+                    <div class="flex items-center text-sm text-gray-400">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                        Sistema Online
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500">v2.1.0</span>
+                    <span class="text-sm text-gray-400">|</span>
+                    <span class="text-sm text-gray-500" id="system-status">Dashboard Ativo</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        // System Configuration
+        window.__app_id = 'gestao-clientes-senai';
+        window.__firebase_config = {}; // Will use test data if empty
+        
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('pt-BR');
+            document.getElementById('last-update').textContent = `${timeString} - ${dateString}`;
+        }
+
+        // Initialize
+        updateLastUpdateTime();
+        setInterval(updateLastUpdateTime, 1000);
+
+        // Load Dashboard Manager
+        import('./assets/js/dashboard-manager.js')
+            .then(() => {
+                console.log('Dashboard Analytics carregado com sucesso!');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar Dashboard Analytics:', error);
+            });
+    </script>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+</body>
+</html>

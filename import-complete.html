@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Import - Gestão de Clientes</title>
+    
+    <!-- External Resources -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+
+        .import-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border: 1px solid #e5e7eb;
+        }
+
+        .import-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-upload-area {
+            transition: all 0.3s ease;
+            border: 2px dashed #d1d5db;
+            background: #f9fafb;
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary-light);
+            background: #f8fafc;
+        }
+
+        .import-button {
+            background: linear-gradient(135deg, var(--success) 0%, #065f46 100%);
+            transition: all 0.3s ease;
+        }
+
+        .import-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px -5px rgba(5, 150, 105, 0.3);
+        }
+
+        .import-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .validation-status {
+            transition: all 0.2s ease;
+        }
+
+        .status-valid {
+            background: linear-gradient(135deg, #10b981 0%, #065f46 100%);
+            color: white;
+        }
+
+        .status-invalid {
+            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+            color: white;
+        }
+
+        .status-duplicate {
+            background: linear-gradient(135deg, #f59e0b 0%, #92400e 100%);
+            color: white;
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .preview-table {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .setting-toggle {
+            transition: all 0.2s ease;
+        }
+
+        .setting-toggle:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+
+        .step-active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .step-completed {
+            background: linear-gradient(135deg, var(--success) 0%, #065f46 100%);
+            color: white;
+        }
+
+        .file-info {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-primary hover:text-primary-light transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-xl font-semibold text-gray-900">Sistema de Import</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="export-complete.html" 
+                       class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Export
+                    </a>
+                    <a href="dashboard-complete.html" 
+                       class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Importar Clientes em Massa</h2>
+            <p class="text-gray-600 mt-2">Importe seus clientes via CSV ou Excel com validação automática e preview dos dados</p>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="flex items-center justify-between mb-8 bg-white rounded-xl p-6 shadow-sm">
+            <div class="flex-1 flex items-center">
+                <div class="step-indicator step-active w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mr-3">1</div>
+                <div>
+                    <div class="text-sm font-medium text-gray-900">Upload do Arquivo</div>
+                    <div class="text-xs text-gray-500">CSV ou Excel</div>
+                </div>
+            </div>
+            <div class="w-12 h-0.5 bg-gray-200 mx-4"></div>
+            <div class="flex-1 flex items-center">
+                <div class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mr-3 bg-gray-200 text-gray-500">2</div>
+                <div>
+                    <div class="text-sm font-medium text-gray-500">Validação</div>
+                    <div class="text-xs text-gray-400">Verificar dados</div>
+                </div>
+            </div>
+            <div class="w-12 h-0.5 bg-gray-200 mx-4"></div>
+            <div class="flex-1 flex items-center">
+                <div class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mr-3 bg-gray-200 text-gray-500">3</div>
+                <div>
+                    <div class="text-sm font-medium text-gray-500">Importar</div>
+                    <div class="text-xs text-gray-400">Salvar no sistema</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            <!-- Upload Area -->
+            <div class="lg:col-span-2">
+                <div class="import-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">1. Selecionar Arquivo</h3>
+                    
+                    <div class="file-upload-area rounded-lg p-8 text-center cursor-pointer" id="file-upload-area">
+                        <div class="mx-auto w-12 h-12 text-gray-400 mb-4">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"/>
+                            </svg>
+                        </div>
+                        <div class="text-lg font-medium text-gray-900 mb-2">Arraste seu arquivo aqui</div>
+                        <div class="text-sm text-gray-500 mb-4">ou clique para selecionar</div>
+                        <div class="text-xs text-gray-400">Suporta: CSV, Excel (.xlsx, .xls) - Máx. 10MB</div>
+                        <input type="file" id="file-input" class="hidden" accept=".csv,.xlsx,.xls">
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="file-info" class="file-info mt-4 hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <div class="text-sm font-medium text-blue-800" id="file-name">arquivo.csv</div>
+                                    <div class="text-sm text-blue-600" id="file-size">1.2 MB</div>
+                                    <div class="mt-2">
+                                        <button id="process-file-btn" class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                                            Processar Arquivo
+                                        </button>
+                                        <button id="remove-file-btn" class="text-sm text-blue-600 hover:text-blue-800 ml-2">
+                                            Remover
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Settings -->
+            <div class="import-card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Configurações</h3>
+                
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Pular Duplicatas</span>
+                        <input type="checkbox" id="skip-duplicates" class="setting-toggle rounded" checked>
+                    </label>
+                    
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Validar E-mails</span>
+                        <input type="checkbox" id="validate-emails" class="setting-toggle rounded" checked>
+                    </label>
+                    
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Validar Telefones</span>
+                        <input type="checkbox" id="validate-phones" class="setting-toggle rounded" checked>
+                    </label>
+                    
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Atualizar Existentes</span>
+                        <input type="checkbox" id="update-existing" class="setting-toggle rounded">
+                    </label>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tamanho do Lote</label>
+                    <select id="batch-size" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="25">25 registros</option>
+                        <option value="50" selected>50 registros</option>
+                        <option value="100">100 registros</option>
+                    </select>
+                </div>
+
+                <!-- Format Guide -->
+                <div class="mt-6 p-3 bg-gray-50 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Formato Esperado</h4>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>• <strong>Nome:</strong> obrigatório</div>
+                        <div>• <strong>E-mail:</strong> obrigatório</div>
+                        <div>• <strong>Telefone:</strong> opcional</div>
+                        <div>• <strong>Endereço:</strong> opcional</div>
+                        <div>• <strong>Empresa:</strong> opcional</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Statistics -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8" id="import-stats" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Estatísticas do Import</h3>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="import-total-records">0</div>
+                    <div class="text-sm text-gray-500">Total de Registros</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="import-valid-records">0</div>
+                    <div class="text-sm text-gray-500">Registros Válidos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-600" id="import-invalid-records">0</div>
+                    <div class="text-sm text-gray-500">Registros Inválidos</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-600" id="import-duplicate-records">0</div>
+                    <div class="text-sm text-gray-500">Duplicatas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Summary -->
+        <div id="validation-summary" class="mb-8" style="display: none;">
+            <!-- Content loaded by JavaScript -->
+        </div>
+
+        <!-- Import Actions -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-8" id="import-actions" style="display: none;">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Pronto para Importar</h3>
+                    <p class="text-sm text-gray-600">Verifique os dados no preview e clique em importar</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="download-template-btn" class="px-4 py-2 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors">
+                        Baixar Template
+                    </button>
+                    <button id="start-import-btn" class="import-button px-6 py-2 text-white rounded-lg font-medium">
+                        Iniciar Importação
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="import-progress" class="mt-4 hidden">
+                <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                    <span id="import-progress-text">Preparando importação...</span>
+                    <span id="import-progress-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="import-progress-bar progress-bar bg-primary h-2 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Preview -->
+        <div class="bg-white rounded-xl shadow-sm p-6" id="data-preview" style="display: none;">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Preview dos Dados</h3>
+                <div class="text-sm text-gray-500">Mostrando primeiros 20 registros</div>
+            </div>
+            
+            <div class="preview-table border border-gray-200 rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200" id="import-preview-table">
+                    <!-- Content loaded by JavaScript -->
+                </table>
+            </div>
+        </div>
+
+        <!-- Import Results -->
+        <div class="bg-white rounded-xl shadow-sm p-6" id="import-results" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Resultado da Importação</h3>
+            <div id="import-results-content">
+                <!-- Content loaded by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-4">Como usar o sistema de import</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-800 mb-2">Formatos Suportados</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Arquivos CSV (separados por vírgula)</li>
+                        <li>• Arquivos Excel (.xlsx, .xls)</li>
+                        <li>• Primeira linha deve conter os cabeçalhos</li>
+                        <li>• Máximo de 10MB por arquivo</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-blue-800 mb-2">Campos Obrigatórios</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• <strong>Nome:</strong> Nome completo do cliente</li>
+                        <li>• <strong>E-mail:</strong> E-mail válido (será validado)</li>
+                        <li>• <strong>Telefone:</strong> Opcional, mas recomendado</li>
+                        <li>• <strong>Endereço, Empresa:</strong> Campos opcionais</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button id="download-sample-btn" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Baixar Arquivo de Exemplo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // System Configuration
+        window.__app_id = 'gestao-clientes-senai';
+        window.__firebase_config = {}; // Will use test data if empty
+
+        let importManager = null;
+        let currentStep = 1;
+
+        // Initialize Import System
+        async function initializeImportSystem() {
+            const { ImportManager } = await import('./assets/js/import-manager.js');
+            
+            const config = typeof window.__firebase_config === 'string' 
+                ? JSON.parse(window.__firebase_config) 
+                : window.__firebase_config || {};
+                
+            importManager = new ImportManager(window.__app_id, config);
+            await importManager.initialize();
+            
+            setupEventListeners();
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // File upload area
+            const uploadArea = document.getElementById('file-upload-area');
+            const fileInput = document.getElementById('file-input');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Settings
+            document.getElementById('skip-duplicates').addEventListener('change', updateSettings);
+            document.getElementById('validate-emails').addEventListener('change', updateSettings);
+            document.getElementById('validate-phones').addEventListener('change', updateSettings);
+            document.getElementById('update-existing').addEventListener('change', updateSettings);
+            document.getElementById('batch-size').addEventListener('change', updateSettings);
+
+            // Action buttons
+            document.getElementById('process-file-btn').addEventListener('click', processCurrentFile);
+            document.getElementById('remove-file-btn').addEventListener('click', removeFile);
+            document.getElementById('start-import-btn').addEventListener('click', startImport);
+            document.getElementById('download-template-btn').addEventListener('click', downloadTemplate);
+            document.getElementById('download-sample-btn').addEventListener('click', downloadSample);
+        }
+
+        // File handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file
+            if (!validateFile(file)) return;
+
+            // Show file info
+            showFileInfo(file);
+            window.currentFile = file;
+        }
+
+        function validateFile(file) {
+            const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            const validExtensions = ['.csv', '.xlsx', '.xls'];
+            
+            const hasValidType = validTypes.includes(file.type);
+            const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+            
+            if (!hasValidType && !hasValidExtension) {
+                importManager.showNotification('Formato de arquivo não suportado. Use CSV ou Excel.', 'error');
+                return false;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                importManager.showNotification('Arquivo muito grande. Máximo 10MB.', 'error');
+                return false;
+            }
+
+            return true;
+        }
+
+        function showFileInfo(file) {
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('hidden');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeFile() {
+            window.currentFile = null;
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('file-input').value = '';
+            hideProcessingResults();
+        }
+
+        // Process file
+        async function processCurrentFile() {
+            if (!window.currentFile) return;
+
+            showLoading('Processando arquivo...');
+            
+            try {
+                const result = await importManager.processFile(window.currentFile);
+                
+                if (result.success) {
+                    updateStep(2);
+                    showProcessingResults();
+                    importManager.showNotification(`Arquivo processado: ${result.validRecords} registros válidos de ${result.totalRecords}`, 'success');
+                }
+            } catch (error) {
+                importManager.showNotification('Erro ao processar arquivo: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Import execution
+        async function startImport() {
+            if (!importManager.validationResults.valid.length) {
+                importManager.showNotification('Nenhum registro válido para importar', 'warning');
+                return;
+            }
+
+            updateStep(3);
+            showImportProgress();
+
+            try {
+                const settings = getImportSettings();
+                const results = await importManager.executeImport(settings);
+                
+                showImportResults(results);
+                importManager.showNotification(`Importação concluída: ${results.success} registros importados`, 'success');
+                
+            } catch (error) {
+                importManager.showNotification('Erro na importação: ' + error.message, 'error');
+            }
+        }
+
+        // Settings management
+        function updateSettings() {
+            const settings = getImportSettings();
+            importManager.updateSettings(settings);
+        }
+
+        function getImportSettings() {
+            return {
+                skipDuplicates: document.getElementById('skip-duplicates').checked,
+                validateEmails: document.getElementById('validate-emails').checked,
+                validatePhones: document.getElementById('validate-phones').checked,
+                updateExisting: document.getElementById('update-existing').checked,
+                batchSize: parseInt(document.getElementById('batch-size').value)
+            };
+        }
+
+        // UI Management
+        function updateStep(step) {
+            currentStep = step;
+            
+            // Update step indicators
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                indicator.classList.remove('step-active', 'step-completed');
+                
+                if (index + 1 < step) {
+                    indicator.classList.add('step-completed');
+                } else if (index + 1 === step) {
+                    indicator.classList.add('step-active');
+                } else {
+                    indicator.className = 'step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mr-3 bg-gray-200 text-gray-500';
+                }
+            });
+        }
+
+        function showProcessingResults() {
+            document.getElementById('import-stats').style.display = 'block';
+            document.getElementById('validation-summary').style.display = 'block';
+            document.getElementById('import-actions').style.display = 'block';
+            document.getElementById('data-preview').style.display = 'block';
+        }
+
+        function hideProcessingResults() {
+            document.getElementById('import-stats').style.display = 'none';
+            document.getElementById('validation-summary').style.display = 'none';
+            document.getElementById('import-actions').style.display = 'none';
+            document.getElementById('data-preview').style.display = 'none';
+            document.getElementById('import-results').style.display = 'none';
+            updateStep(1);
+        }
+
+        function showImportProgress() {
+            document.getElementById('import-progress').classList.remove('hidden');
+            document.getElementById('start-import-btn').textContent = 'Importando...';
+            document.getElementById('start-import-btn').disabled = true;
+        }
+
+        function showImportResults(results) {
+            const resultsContainer = document.getElementById('import-results');
+            const resultsContent = document.getElementById('import-results-content');
+            
+            let html = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600">${results.success}</div>
+                        <div class="text-sm text-green-700">Importados</div>
+                    </div>
+                    <div class="text-center p-4 bg-red-50 rounded-lg">
+                        <div class="text-2xl font-bold text-red-600">${results.errors}</div>
+                        <div class="text-sm text-red-700">Erros</div>
+                    </div>
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                        <div class="text-2xl font-bold text-yellow-600">${results.skipped}</div>
+                        <div class="text-sm text-yellow-700">Ignorados</div>
+                    </div>
+                </div>
+            `;
+
+            if (results.details && results.details.length > 0) {
+                html += '<h4 class="font-medium text-gray-900 mb-3">Detalhes:</h4>';
+                html += '<div class="max-h-64 overflow-y-auto space-y-2">';
+                
+                results.details.slice(0, 10).forEach(detail => {
+                    const statusClass = detail.status === 'success' ? 'text-green-600' : 'text-red-600';
+                    html += `
+                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
+                            <span class="text-sm text-gray-900">${detail.client}</span>
+                            <span class="text-xs ${statusClass}">${detail.message}</span>
+                        </div>
+                    `;
+                });
+
+                if (results.details.length > 10) {
+                    html += `<div class="text-sm text-gray-500 text-center py-2">... e mais ${results.details.length - 10} registros</div>`;
+                }
+                
+                html += '</div>';
+            }
+
+            resultsContent.innerHTML = html;
+            resultsContainer.style.display = 'block';
+
+            // Reset import button
+            document.getElementById('start-import-btn').textContent = 'Iniciar Importação';
+            document.getElementById('start-import-btn').disabled = false;
+            document.getElementById('import-progress').classList.add('hidden');
+        }
+
+        // Utility functions
+        function showLoading(message) {
+            // Implementation for loading state
+            console.log('Loading:', message);
+        }
+
+        function hideLoading() {
+            // Implementation to hide loading state
+            console.log('Loading complete');
+        }
+
+        function downloadTemplate() {
+            const csvContent = "nome,email,telefone,endereco,empresa\nJoão Silva,joao@exemplo.com,(11) 99999-9999,Rua Exemplo 123,Empresa ABC\n";
+            downloadCSV(csvContent, 'template_clientes.csv');
+        }
+
+        function downloadSample() {
+            const csvContent = `nome,email,telefone,endereco,empresa
+Ana Silva,ana.silva@email.com,(11) 91234-5678,Rua das Flores 123,Tech Solutions
+Pedro Santos,pedro@empresa.com,(11) 98765-4321,Av. Paulista 1000,Consultoria XYZ
+Maria Oliveira,maria.oliveira@gmail.com,(11) 95555-1234,Rua Augusta 500,Design Studio
+Carlos Lima,carlos@startup.com,(11) 94444-5678,Rua Oscar Freire 200,Startup ABC
+Lucia Ferreira,lucia.ferreira@outlook.com,(11) 93333-9876,Alameda Santos 800,Marketing Plus`;
+            downloadCSV(csvContent, 'exemplo_clientes.csv');
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', initializeImportSystem);
+    </script>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+</body>
+</html>

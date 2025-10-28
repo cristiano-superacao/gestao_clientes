@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema completo de gestão de clientes com CRUD completo, busca avançada e notificações">
+    <title>Sistema de Gestão de Clientes - SENAI (Versão Completa)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="spinner mb-4"></div>
+            <p class="text-gray-600">Inicializando sistema...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold">Sistema de Gestão de Clientes</h1>
+                    <p class="text-purple-100 mt-1">SENAI - Bar e Restaurante - Versão Completa</p>
+                </div>
+                <div class="text-right">
+                    <p id="user-info" class="text-sm text-purple-100">Carregando...</p>
+                    <div class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span>
+                            Sistema Ativo
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Profile Section -->
+        <section class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+                Perfil do Usuário
+            </h2>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <p id="profile-status" class="text-gray-600 mb-3">Carregando dados do perfil...</p>
+                    <div id="profile-data" class="hidden">
+                        <p class="text-sm text-gray-700">
+                            <strong>Nome:</strong> <span id="profile-name">-</span>
+                        </p>
+                        <p class="text-sm text-gray-700">
+                            <strong>Empresa:</strong> <span id="profile-company">-</span>
+                        </p>
+                    </div>
+                </div>
+                <button id="save-profile-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                    Salvar Perfil Padrão
+                </button>
+            </div>
+        </section>
+
+        <!-- Client Management Section -->
+        <section class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                    </svg>
+                    Gestão de Clientes
+                </h2>
+                
+                <button id="add-client-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    Adicionar Cliente
+                </button>
+            </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Buscar Clientes</label>
+                        <div class="relative">
+                            <input type="text" id="search-input" placeholder="Buscar por nome, email ou telefone..." 
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="sm:w-48">
+                        <label for="filter-select" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                        <select id="filter-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="timestamp">Data de Adição</option>
+                            <option value="recent">Mais Recentes</option>
+                            <option value="name">Nome (A-Z)</option>
+                            <option value="email">Email (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client List -->
+            <div id="client-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p class="text-red-800">Erro ao carregar clientes. Tente recarregar a página.</p>
+            </div>
+
+            <div class="space-y-4">
+                <ul id="client-list" class="space-y-4">
+                    <li class="p-4 bg-gray-50 rounded-lg text-gray-600 text-center">
+                        <div class="spinner mx-auto mb-2"></div>
+                        Carregando clientes...
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <!-- Client Modal -->
+    <div id="client-modal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-lg font-semibold text-gray-800">Adicionar Cliente</h3>
+                    <button class="modal-close text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="client-form" class="space-y-4">
+                    <div>
+                        <label for="client-name" class="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                        <input type="text" id="client-name" name="name" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Nome completo do cliente">
+                    </div>
+
+                    <div>
+                        <label for="client-email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input type="email" id="client-email" name="email" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="email@exemplo.com">
+                    </div>
+
+                    <div>
+                        <label for="client-phone" class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                        <input type="tel" id="client-phone" name="phone" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="(11) 99999-9999">
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" id="save-client-btn" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                            Salvar Cliente
+                        </button>
+                        <button type="button" class="modal-close px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center">
+                <div class="mb-4 sm:mb-0">
+                    <p class="text-sm">© 2024 SENAI - Sistema de Gestão de Clientes</p>
+                    <p class="text-xs text-gray-400 mt-1">Versão Completa com CRUD, Busca e Notificações</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-xs px-2 py-1 bg-green-600 rounded-full">Sistema Operacional</span>
+                    <span class="text-xs text-gray-400">Firebase + Firestore</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { ClientManager } from './assets/js/client-manager-enhanced.js';
+        
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "SEU_API_KEY_AQUI",
+            authDomain: "SEU_AUTH_DOMAIN_AQUI",
+            projectId: "SEU_PROJECT_ID_AQUI",
+            storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+            appId: "SEU_APP_ID_AQUI"
+        };
+
+        // Initialize Client Manager
+        const clientManager = new ClientManager(
+            'cliente-gestor-app',
+            firebaseConfig,
+            null // No custom auth token
+        );
+
+        // Make clientManager globally available
+        window.clientManager = clientManager;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async () => {
+            await clientManager.initialize();
+            clientManager.setupEventListeners();
+        });
+
+        // Service Worker Registration (opcional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
+
+    <!-- Enhanced CSS for animations and components -->
+    <style>
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .client-item {
+            transition: all 0.3s ease;
+        }
+
+        .client-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 640px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .client-item {
+                padding: 1rem;
+            }
+            
+            .client-item .flex {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Accessibility improvements */
+        button:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Error states */
+        .error {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+    </style>
+</body>
+</html>

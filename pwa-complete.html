@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA - Sistema de Gestão de Clientes - SENAI</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="background-color" content="#ffffff">
+    <meta name="display" content="standalone">
+    <meta name="orientation" content="portrait-primary">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/icon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon-180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon-152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/assets/images/icon-144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/assets/images/icon-120.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/assets/images/icon-114.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/assets/images/icon-76.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/assets/images/icon-72.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/assets/images/icon-60.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="/assets/images/icon-57.png">
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gestão Clientes">
+    
+    <!-- Windows Meta Tags -->
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="msapplication-TileImage" content="/assets/images/icon-144.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .pwa-feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 2rem;
+            color: white;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        
+        .pwa-feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .install-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 24px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .notification-demo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1rem;
+            color: white;
+            margin: 1rem 0;
+            opacity: 0;
+            transform: translateX(300px);
+            transition: all 0.5s ease;
+        }
+        
+        .notification-demo.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-white text-xl font-bold">📱</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Sistema PWA</h1>
+                        <p class="text-gray-600">Progressive Web App v2.2.0</p>
+                    </div>
+                </div>
+                
+                <!-- Status Indicators -->
+                <div class="flex items-center space-x-4">
+                    <div id="network-status" class="px-3 py-1 rounded-lg text-sm opacity-0 transition-opacity"></div>
+                    <div id="install-status" class="flex items-center">
+                        <div class="status-indicator w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-700">PWA Ativo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Welcome Section -->
+        <div class="text-center mb-12">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                Bem-vindo ao Sistema PWA
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                Seu Sistema de Gestão de Clientes agora é um Progressive Web App completo com 
+                funcionalidades offline, sincronização em background e notificações push.
+            </p>
+            
+            <!-- Install Button -->
+            <button id="install-pwa-btn" class="install-button text-lg font-semibold" style="display: none;">
+                📱 Instalar Aplicativo
+            </button>
+        </div>
+
+        <!-- PWA Features Grid -->
+        <div class="feature-grid">
+            <!-- Offline Support -->
+            <div class="pwa-feature-card">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">📴</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Suporte Offline</h3>
+                </div>
+                <p class="text-white/80 mb-4">
+                    Use o sistema mesmo sem internet. Todos os dados são sincronizados automaticamente 
+                    quando a conexão for restaurada.
+                </p>
+                <div class="flex items-center">
+                    <div id="offline-status" class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-sm">Cache ativo - Funciona offline</span>
+                </div>
+            </div>
+
+            <!-- Background Sync -->
+            <div class="pwa-feature-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">🔄</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Sincronização Automática</h3>
+                </div>
+                <p class="text-white/80 mb-4">
+                    Seus dados são sincronizados em background mesmo quando o app não está aberto. 
+                    Nunca perca informações importantes.
+                </p>
+                <div class="flex items-center">
+                    <div id="sync-queue" class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-sm">Fila de sincronização: <span id="queue-count">0</span> itens</span>
+                </div>
+            </div>
+
+            <!-- Push Notifications -->
+            <div class="pwa-feature-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">🔔</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Notificações Push</h3>
+                </div>
+                <p class="text-white/80 mb-4">
+                    Receba notificações importantes sobre backups, sincronização e atualizações 
+                    do sistema mesmo com o app fechado.
+                </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div id="notification-status" class="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
+                        <span class="text-sm" id="notification-text">Permissão pendente</span>
+                    </div>
+                    <button id="enable-notifications" class="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition-colors">
+                        Ativar
+                    </button>
+                </div>
+            </div>
+
+            <!-- App Installation -->
+            <div class="pwa-feature-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">📲</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Instalação Nativa</h3>
+                </div>
+                <p class="text-white/80 mb-4">
+                    Instale o sistema como um aplicativo nativo no seu dispositivo. 
+                    Acesso rápido direto da tela inicial.
+                </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div id="install-indicator" class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                        <span class="text-sm" id="install-text">Disponível</span>
+                    </div>
+                    <button id="install-trigger" class="bg-white/20 px-3 py-1 rounded-lg text-sm hover:bg-white/30 transition-colors">
+                        Instalar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Performance -->
+            <div class="pwa-feature-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/50 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">⚡</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Performance Otimizada</h3>
+                </div>
+                <p class="text-gray-700 mb-4">
+                    Carregamento instantâneo com cache inteligente. Service Worker gerencia 
+                    recursos para máxima performance.
+                </p>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-sm">Cache: <span id="cache-size">Calculando...</span></span>
+                </div>
+            </div>
+
+            <!-- Updates -->
+            <div class="pwa-feature-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-white/50 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-2xl">🔄</span>
+                    </div>
+                    <h3 class="text-xl font-bold">Atualizações Automáticas</h3>
+                </div>
+                <p class="text-gray-700 mb-4">
+                    O sistema verifica e instala atualizações automaticamente. 
+                    Sempre tenha a versão mais recente.
+                </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Versão: v2.2.0</span>
+                    </div>
+                    <button id="check-updates" class="bg-white/50 px-3 py-1 rounded-lg text-sm hover:bg-white/70 transition-colors">
+                        Verificar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mt-12">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+                Demonstração das Funcionalidades PWA
+            </h3>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Notification Demo -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">🔔 Teste de Notificações</h4>
+                    <p class="text-gray-600 mb-4">
+                        Clique no botão para ver como as notificações funcionam:
+                    </p>
+                    <div class="space-y-3">
+                        <button id="test-notification" class="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors">
+                            Enviar Notificação de Teste
+                        </button>
+                        <button id="test-backup-notification" class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                            Simular Notificação de Backup
+                        </button>
+                        <button id="test-sync-notification" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                            Simular Sincronização
+                        </button>
+                    </div>
+                    
+                    <!-- Notification Preview -->
+                    <div id="notification-preview" class="notification-demo">
+                        <div class="flex items-center">
+                            <img src="/assets/images/icon-32.png" alt="Icon" class="w-8 h-8 mr-3">
+                            <div>
+                                <div class="font-semibold">Gestão de Clientes</div>
+                                <div class="text-sm opacity-80">Exemplo de notificação push</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Offline Demo -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">📴 Modo Offline</h4>
+                    <p class="text-gray-600 mb-4">
+                        Teste as funcionalidades offline do sistema:
+                    </p>
+                    <div class="space-y-3">
+                        <button id="simulate-offline" class="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">
+                            Simular Modo Offline
+                        </button>
+                        <button id="simulate-online" class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                            Simular Volta Online
+                        </button>
+                        <button id="add-offline-data" class="w-full bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">
+                            Adicionar Dados Offline
+                        </button>
+                    </div>
+                    
+                    <!-- Offline Status -->
+                    <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <div class="text-sm text-gray-600">Status da Conexão:</div>
+                        <div id="connection-status" class="font-semibold text-green-600">🌐 Online</div>
+                        <div class="text-sm text-gray-600 mt-2">Itens na fila offline:</div>
+                        <div id="offline-queue-status" class="font-semibold text-blue-600">0 itens</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Navigation -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mt-12">
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+                Acesso Rápido ao Sistema
+            </h3>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <a href="/index-complete.html" class="block p-6 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors text-center">
+                    <div class="text-3xl mb-3">👥</div>
+                    <h4 class="font-semibold text-primary-900">Clientes</h4>
+                    <p class="text-sm text-primary-700">Gerenciar clientes</p>
+                </a>
+                
+                <a href="/dashboard-complete.html" class="block p-6 bg-green-50 rounded-xl hover:bg-green-100 transition-colors text-center">
+                    <div class="text-3xl mb-3">📊</div>
+                    <h4 class="font-semibold text-green-900">Dashboard</h4>
+                    <p class="text-sm text-green-700">Analytics e relatórios</p>
+                </a>
+                
+                <a href="/export-complete.html" class="block p-6 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors text-center">
+                    <div class="text-3xl mb-3">📤</div>
+                    <h4 class="font-semibold text-blue-900">Exportar</h4>
+                    <p class="text-sm text-blue-700">PDF e Excel</p>
+                </a>
+                
+                <a href="/backup-complete.html" class="block p-6 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors text-center">
+                    <div class="text-3xl mb-3">💾</div>
+                    <h4 class="font-semibold text-purple-900">Backup</h4>
+                    <p class="text-sm text-purple-700">Backup automático</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div class="bg-gray-900 text-white rounded-2xl shadow-xl p-8 mt-12">
+            <h3 class="text-2xl font-bold mb-6 text-center">
+                Detalhes Técnicos PWA
+            </h3>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <h4 class="font-semibold text-lg mb-3 text-blue-400">Service Worker</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>✅ Cache estratégico</li>
+                        <li>✅ Suporte offline completo</li>
+                        <li>✅ Background sync</li>
+                        <li>✅ Push notifications</li>
+                        <li>✅ Atualizações automáticas</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold text-lg mb-3 text-green-400">Manifest</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>✅ Ícones multi-resolução</li>
+                        <li>✅ Splash screens</li>
+                        <li>✅ Display standalone</li>
+                        <li>✅ Shortcuts de app</li>
+                        <li>✅ File handlers</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold text-lg mb-3 text-purple-400">Recursos</h4>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li>✅ Cache inteligente</li>
+                        <li>✅ Sync background</li>
+                        <li>✅ Notificações ricas</li>
+                        <li>✅ Instalação nativa</li>
+                        <li>✅ Performance otimizada</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+                <h5 class="font-semibold mb-2">Status do Sistema:</h5>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-400">SW:</span>
+                        <span id="sw-status" class="text-green-400 ml-2">Ativo</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Cache:</span>
+                        <span id="cache-status" class="text-green-400 ml-2">OK</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Sync:</span>
+                        <span id="sync-status" class="text-green-400 ml-2">Ativo</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Push:</span>
+                        <span id="push-status" class="text-yellow-400 ml-2">Pendente</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/pwa-manager.js"></script>
+    
+    <script>
+        // PWA Page Controller
+        class PWAPageController {
+            constructor() {
+                this.init();
+            }
+            
+            init() {
+                console.log('🚀 PWA Page Controller iniciando...');
+                this.setupEventListeners();
+                this.updateUI();
+                
+                // Wait for PWA Manager to initialize
+                this.waitForPWAManager();
+            }
+            
+            waitForPWAManager() {
+                if (window.pwaManager) {
+                    this.pwaManager = window.pwaManager;
+                    this.updatePWAStatus();
+                } else {
+                    setTimeout(() => this.waitForPWAManager(), 100);
+                }
+            }
+            
+            setupEventListeners() {
+                // Notification tests
+                document.getElementById('test-notification')?.addEventListener('click', () => {
+                    this.testNotification();
+                });
+                
+                document.getElementById('test-backup-notification')?.addEventListener('click', () => {
+                    this.testBackupNotification();
+                });
+                
+                document.getElementById('test-sync-notification')?.addEventListener('click', () => {
+                    this.testSyncNotification();
+                });
+                
+                // Enable notifications
+                document.getElementById('enable-notifications')?.addEventListener('click', () => {
+                    this.enableNotifications();
+                });
+                
+                // Offline simulation
+                document.getElementById('simulate-offline')?.addEventListener('click', () => {
+                    this.simulateOffline();
+                });
+                
+                document.getElementById('simulate-online')?.addEventListener('click', () => {
+                    this.simulateOnline();
+                });
+                
+                document.getElementById('add-offline-data')?.addEventListener('click', () => {
+                    this.addOfflineData();
+                });
+                
+                // Install trigger
+                document.getElementById('install-trigger')?.addEventListener('click', () => {
+                    this.triggerInstall();
+                });
+                
+                // Check updates
+                document.getElementById('check-updates')?.addEventListener('click', () => {
+                    this.checkUpdates();
+                });
+            }
+            
+            updateUI() {
+                // Update connection status
+                this.updateConnectionStatus();
+                
+                // Update queue status
+                setInterval(() => {
+                    this.updateQueueStatus();
+                }, 2000);
+                
+                // Update cache size
+                this.updateCacheSize();
+            }
+            
+            updatePWAStatus() {
+                if (!this.pwaManager) return;
+                
+                // Update notification status
+                const permission = this.pwaManager.getNotificationPermission();
+                this.updateNotificationStatus(permission);
+                
+                // Update install status
+                const isInstalled = this.pwaManager.checkInstallationStatus();
+                this.updateInstallStatus(isInstalled);
+                
+                // Update queue count
+                const queueLength = this.pwaManager.getOfflineQueueLength();
+                document.getElementById('queue-count').textContent = queueLength;
+                
+                // Update service worker status
+                this.updateServiceWorkerStatus();
+            }
+            
+            updateNotificationStatus(permission) {
+                const statusElement = document.getElementById('notification-status');
+                const textElement = document.getElementById('notification-text');
+                const pushStatus = document.getElementById('push-status');
+                
+                switch (permission) {
+                    case 'granted':
+                        statusElement.className = 'w-3 h-3 bg-green-400 rounded-full mr-2';
+                        textElement.textContent = 'Ativo';
+                        pushStatus.textContent = 'Ativo';
+                        pushStatus.className = 'text-green-400 ml-2';
+                        break;
+                    case 'denied':
+                        statusElement.className = 'w-3 h-3 bg-red-400 rounded-full mr-2';
+                        textElement.textContent = 'Negado';
+                        pushStatus.textContent = 'Negado';
+                        pushStatus.className = 'text-red-400 ml-2';
+                        break;
+                    default:
+                        statusElement.className = 'w-3 h-3 bg-yellow-400 rounded-full mr-2';
+                        textElement.textContent = 'Pendente';
+                        pushStatus.textContent = 'Pendente';
+                        pushStatus.className = 'text-yellow-400 ml-2';
+                }
+            }
+            
+            updateInstallStatus(isInstalled) {
+                const indicator = document.getElementById('install-indicator');
+                const text = document.getElementById('install-text');
+                
+                if (isInstalled) {
+                    indicator.className = 'w-3 h-3 bg-green-400 rounded-full mr-2';
+                    text.textContent = 'Instalado';
+                } else {
+                    indicator.className = 'w-3 h-3 bg-blue-400 rounded-full mr-2';
+                    text.textContent = 'Disponível';
+                }
+            }
+            
+            updateConnectionStatus() {
+                const statusElement = document.getElementById('connection-status');
+                const isOnline = navigator.onLine;
+                
+                if (isOnline) {
+                    statusElement.innerHTML = '🌐 Online';
+                    statusElement.className = 'font-semibold text-green-600';
+                } else {
+                    statusElement.innerHTML = '📴 Offline';
+                    statusElement.className = 'font-semibold text-red-600';
+                }
+            }
+            
+            updateQueueStatus() {
+                if (!this.pwaManager) return;
+                
+                const queueLength = this.pwaManager.getOfflineQueueLength();
+                const statusElement = document.getElementById('offline-queue-status');
+                
+                if (queueLength > 0) {
+                    statusElement.innerHTML = `${queueLength} itens pendentes`;
+                    statusElement.className = 'font-semibold text-orange-600';
+                } else {
+                    statusElement.innerHTML = '0 itens';
+                    statusElement.className = 'font-semibold text-blue-600';
+                }
+                
+                document.getElementById('queue-count').textContent = queueLength;
+            }
+            
+            updateServiceWorkerStatus() {
+                if (!this.pwaManager) return;
+                
+                const swRegistration = this.pwaManager.getServiceWorkerRegistration();
+                const swStatus = document.getElementById('sw-status');
+                
+                if (swRegistration && swRegistration.active) {
+                    swStatus.textContent = 'Ativo';
+                    swStatus.className = 'text-green-400 ml-2';
+                } else {
+                    swStatus.textContent = 'Inativo';
+                    swStatus.className = 'text-red-400 ml-2';
+                }
+            }
+            
+            async updateCacheSize() {
+                try {
+                    if ('storage' in navigator && 'estimate' in navigator.storage) {
+                        const estimate = await navigator.storage.estimate();
+                        const usedMB = (estimate.usage / 1024 / 1024).toFixed(2);
+                        document.getElementById('cache-size').textContent = `${usedMB} MB`;
+                    } else {
+                        document.getElementById('cache-size').textContent = 'N/A';
+                    }
+                } catch (error) {
+                    document.getElementById('cache-size').textContent = 'Erro';
+                }
+            }
+            
+            // Test methods
+            async testNotification() {
+                if (!this.pwaManager) return;
+                
+                await this.pwaManager.showNotification('Teste de Notificação', {
+                    body: 'Esta é uma notificação de teste do sistema PWA!',
+                    tag: 'test-notification',
+                    requireInteraction: false
+                });
+                
+                this.showNotificationPreview('Teste de Notificação', 'Esta é uma notificação de teste do sistema PWA!');
+            }
+            
+            async testBackupNotification() {
+                if (!this.pwaManager) return;
+                
+                await this.pwaManager.showNotification('Backup Concluído', {
+                    body: 'Backup automático realizado com sucesso às ' + new Date().toLocaleTimeString(),
+                    tag: 'backup-complete',
+                    actions: [
+                        { action: 'view-backup', title: 'Ver Backups' },
+                        { action: 'dismiss', title: 'OK' }
+                    ]
+                });
+                
+                this.showNotificationPreview('Backup Concluído', 'Backup automático realizado com sucesso');
+            }
+            
+            async testSyncNotification() {
+                if (!this.pwaManager) return;
+                
+                await this.pwaManager.showNotification('Sincronização Completa', {
+                    body: '5 clientes sincronizados com sucesso após reconexão',
+                    tag: 'sync-complete'
+                });
+                
+                this.showNotificationPreview('Sincronização Completa', '5 clientes sincronizados com sucesso');
+            }
+            
+            showNotificationPreview(title, body) {
+                const preview = document.getElementById('notification-preview');
+                preview.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="/assets/images/icon-32.png" alt="Icon" class="w-8 h-8 mr-3">
+                        <div>
+                            <div class="font-semibold">${title}</div>
+                            <div class="text-sm opacity-80">${body}</div>
+                        </div>
+                    </div>
+                `;
+                
+                preview.classList.add('show');
+                
+                setTimeout(() => {
+                    preview.classList.remove('show');
+                }, 4000);
+            }
+            
+            async enableNotifications() {
+                if (!this.pwaManager) return;
+                
+                const permission = await this.pwaManager.requestNotificationPermission();
+                this.updateNotificationStatus(permission);
+                
+                if (permission === 'granted') {
+                    await this.pwaManager.showNotification('Notificações Ativadas', {
+                        body: 'Você receberá notificações sobre backups, sincronização e atualizações.',
+                        tag: 'notifications-enabled'
+                    });
+                }
+            }
+            
+            simulateOffline() {
+                // Visual simulation only - actual offline handling is in PWA Manager
+                this.updateConnectionStatus();
+                
+                const statusElement = document.getElementById('connection-status');
+                statusElement.innerHTML = '📴 Offline (Simulado)';
+                statusElement.className = 'font-semibold text-red-600';
+                
+                // Add some test data to offline queue
+                if (this.pwaManager) {
+                    this.pwaManager.addToOfflineQueue('create-client', {
+                        name: 'Cliente Teste Offline',
+                        email: 'teste@offline.com'
+                    });
+                }
+            }
+            
+            simulateOnline() {
+                // Restore online status
+                this.updateConnectionStatus();
+                
+                // Trigger sync
+                if (this.pwaManager) {
+                    this.pwaManager.syncOfflineData();
+                }
+            }
+            
+            addOfflineData() {
+                if (!this.pwaManager) return;
+                
+                const testData = {
+                    id: 'offline_' + Date.now(),
+                    name: 'Cliente Offline ' + new Date().toLocaleTimeString(),
+                    email: 'offline' + Date.now() + '@teste.com',
+                    phone: '(11) 99999-9999'
+                };
+                
+                this.pwaManager.addToOfflineQueue('create-client', testData);
+                
+                // Show feedback
+                const button = document.getElementById('add-offline-data');
+                const originalText = button.textContent;
+                button.textContent = 'Adicionado!';
+                button.className = button.className.replace('bg-orange-500', 'bg-green-500');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.className = button.className.replace('bg-green-500', 'bg-orange-500');
+                }, 2000);
+            }
+            
+            async triggerInstall() {
+                if (!this.pwaManager) return;
+                
+                const success = await this.pwaManager.installPWA();
+                
+                if (success) {
+                    this.updateInstallStatus(true);
+                }
+            }
+            
+            async checkUpdates() {
+                if (!this.pwaManager) return;
+                
+                const button = document.getElementById('check-updates');
+                const originalText = button.textContent;
+                
+                button.textContent = 'Verificando...';
+                button.disabled = true;
+                
+                try {
+                    await this.pwaManager.checkForUpdates();
+                    
+                    button.textContent = 'Verificado!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                    
+                } catch (error) {
+                    button.textContent = 'Erro';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new PWAPageController();
+        });
+        
+        // Update connection status on network events
+        window.addEventListener('online', () => {
+            document.getElementById('connection-status').innerHTML = '🌐 Online';
+            document.getElementById('connection-status').className = 'font-semibold text-green-600';
+        });
+        
+        window.addEventListener('offline', () => {
+            document.getElementById('connection-status').innerHTML = '📴 Offline';
+            document.getElementById('connection-status').className = 'font-semibold text-red-600';
+        });
+    </script>
+</body>
+</html>

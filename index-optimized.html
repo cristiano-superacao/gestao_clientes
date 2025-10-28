@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Clientes | SENAI</title>
+    <meta name="description" content="Sistema de Gestão de Clientes desenvolvido para o curso SENAI - Bar & Restaurante">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="./assets/css/styles.css">
+    
+    <!-- Configuração do Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5',
+                        'secondary': '#10b981',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'ui-sans-serif', 'system-ui'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="app" class="flex-grow p-4 md:p-8">
+        <!-- Header Section -->
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-8 fade-in">
+            <h1 class="text-3xl font-bold text-primary">Sistema de Gestão de Clientes</h1>
+            <p id="user-info" class="text-sm text-gray-600 mt-1">
+                <span class="sr-only">Status do usuário:</span>
+                Carregando usuário...
+            </p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- User Profile Column -->
+            <section class="lg:col-span-1" aria-labelledby="profile-title">
+                <div class="card fade-in">
+                    <h2 id="profile-title" class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
+                        Meu Perfil
+                    </h2>
+                    <div id="profile-status" class="text-sm italic text-gray-500" role="status" aria-live="polite">
+                        Carregando dados do perfil...
+                    </div>
+                    <div id="profile-data" class="mt-4 hidden">
+                        <p class="text-gray-800">
+                            <strong class="font-medium">Nome:</strong> 
+                            <span id="profile-name"></span>
+                        </p>
+                        <p class="text-gray-800">
+                            <strong class="font-medium">Empresa:</strong> 
+                            <span id="profile-company"></span>
+                        </p>
+                    </div>
+                    <button 
+                        id="save-profile-btn" 
+                        class="mt-4 w-full btn-secondary hover:bg-opacity-90 transition duration-150"
+                        aria-describedby="profile-status"
+                    >
+                        Salvar Perfil Padrão
+                    </button>
+                </div>
+            </section>
+
+            <!-- Clients List Column -->
+            <section class="lg:col-span-2" aria-labelledby="clients-title">
+                <div class="card fade-in">
+                    <h2 id="clients-title" class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
+                        Clientes Cadastrados
+                    </h2>
+                    <ul id="client-list" class="space-y-4" role="list" aria-live="polite">
+                        <li class="p-4 bg-gray-50 rounded-lg text-gray-600">
+                            Nenhum cliente encontrado.
+                        </li>
+                    </ul>
+                    <div id="client-error" class="hidden error-message mt-4" role="alert"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="text-white text-lg flex items-center">
+            <div class="spinner mr-3" aria-hidden="true"></div>
+            <span>Inicializando...</span>
+        </div>
+    </div>
+
+    <!-- Main Application Script -->
+    <script type="module">
+        import { ClientManager } from './assets/js/client-manager.js';
+
+        // Global variables (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Client Manager
+        const clientManager = new ClientManager(appId, firebaseConfig, initialAuthToken);
+
+        // Application initialization
+        window.addEventListener('load', async () => {
+            try {
+                await clientManager.initialize();
+                clientManager.setupEventListeners();
+            } catch (error) {
+                console.error('Erro na inicialização da aplicação:', error);
+            }
+        });
+
+        // Optional: Add example client every 10 seconds (commented out for production)
+        // setInterval(() => clientManager.addExampleClient(), 10000);
+    </script>
+</body>
+</html>

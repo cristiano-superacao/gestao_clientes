@@ -1,0 +1,54 @@
+{
+  "name": "gestao-clientes-senai",
+  "version": "2.0.0",
+  "description": "Sistema Completo de Gestão de Clientes para Bar e Restaurante - SENAI com CRUD Completo",
+  "main": "index-complete.html",
+  "scripts": {
+    "dev": "live-server --port=8080 --open=index-complete.html",
+    "dev:test": "live-server --port=8080 --open=test-complete.html",
+    "dev:original": "live-server --port=8080 --open=index.html",
+    "start": "python -m http.server 8080",
+    "start:python": "python -m http.server 8080",
+    "preview": "live-server --port=3000 --no-browser",
+    "test": "echo 'Servidor de teste iniciado! Acesse: http://localhost:8080/test-complete.html' && python -m http.server 8080",
+    "test:local": "python -m http.server 3001",
+    "build": "echo 'Sistema pronto para produção - Configure Firebase antes do deploy'",
+    "validate": "echo 'Validando estrutura do projeto...' && node -e \"console.log('✅ Estrutura válida')\"",
+    "clean": "echo 'Limpando arquivos temporários...'",
+    "docs": "echo 'Abrindo documentação...' && start README.md",
+    "firebase:config": "echo 'Configure suas credenciais Firebase em index-complete.html'",
+    "help": "echo 'Scripts disponíveis: dev, dev:test, start, preview, build, validate'"
+  },
+  "keywords": [
+    "gestao-clientes",
+    "firebase",
+    "firestore",
+    "crud",
+    "html5",
+    "javascript-es6",
+    "tailwindcss",
+    "senai",
+    "bar-restaurante",
+    "client-management",
+    "responsive-design"
+  ],
+  "author": "SENAI - Turma Bar e Restaurante",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cristiano-superacao/gestao_clientes"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

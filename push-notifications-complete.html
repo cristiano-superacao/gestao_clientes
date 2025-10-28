@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push Notifications - Sistema de Gestão de Clientes - SENAI</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .notification-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            margin: 1rem 0;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        
+        .notification-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .notification-preview {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateX(300px);
+            transition: all 0.5s ease;
+        }
+        
+        .notification-preview.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .permission-granted {
+            background: #10b981;
+            color: white;
+        }
+        
+        .permission-denied {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .permission-default {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .settings-panel {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .history-item {
+            background: white;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-primary-500 rounded-lg flex items-center justify-center mr-4">
+                        <span class="text-white text-xl font-bold">🔔</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Push Notifications</h1>
+                        <p class="text-gray-600">Sistema de Notificações v2.2.0</p>
+                    </div>
+                </div>
+                
+                <!-- Permission Status -->
+                <div class="flex items-center">
+                    <span id="permission-badge" class="permission-badge permission-default">
+                        <span class="w-2 h-2 bg-current rounded-full mr-2"></span>
+                        Permissão Pendente
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Status Overview -->
+        <div class="grid md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card">
+                <div class="text-3xl mb-2">🔔</div>
+                <div class="text-2xl font-bold text-gray-900" id="subscription-status">Desconectado</div>
+                <div class="text-sm text-gray-600">Status da Inscrição</div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="text-3xl mb-2">📨</div>
+                <div class="text-2xl font-bold text-blue-600" id="notifications-sent">0</div>
+                <div class="text-sm text-gray-600">Notificações Enviadas</div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="text-3xl mb-2">👆</div>
+                <div class="text-2xl font-bold text-green-600" id="notifications-clicked">0</div>
+                <div class="text-sm text-gray-600">Cliques</div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="text-3xl mb-2">✨</div>
+                <div class="text-2xl font-bold text-purple-600" id="engagement-rate">0%</div>
+                <div class="text-sm text-gray-600">Taxa de Engajamento</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Ações Rápidas</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Subscription Control -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🔔 Controle de Inscrição</h3>
+                    <div class="space-y-3">
+                        <button id="enable-notifications" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50">
+                            Ativar Notificações
+                        </button>
+                        <button id="disable-notifications" class="w-full bg-red-500 text-white py-3 px-4 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50">
+                            Desativar Notificações
+                        </button>
+                        <button id="test-permission" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                            Verificar Permissões
+                        </button>
+                    </div>
+                    
+                    <!-- Subscription Info -->
+                    <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <div class="text-sm text-gray-600">Endpoint:</div>
+                        <div id="subscription-endpoint" class="text-xs text-gray-800 break-all">Não inscrito</div>
+                    </div>
+                </div>
+                
+                <!-- Test Notifications -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🧪 Testar Notificações</h3>
+                    <div class="space-y-3">
+                        <button id="test-basic" class="w-full bg-primary-500 text-white py-3 px-4 rounded-lg hover:bg-primary-600 transition-colors">
+                            Notificação Básica
+                        </button>
+                        <button id="test-backup" class="w-full bg-purple-500 text-white py-3 px-4 rounded-lg hover:bg-purple-600 transition-colors">
+                            Notificação de Backup
+                        </button>
+                        <button id="test-sync" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                            Notificação de Sync
+                        </button>
+                        <button id="test-update" class="w-full bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors">
+                            Notificação de Update
+                        </button>
+                        <button id="test-reminder" class="w-full bg-yellow-500 text-white py-3 px-4 rounded-lg hover:bg-yellow-600 transition-colors">
+                            Lembrete
+                        </button>
+                        <button id="run-all-tests" class="w-full bg-gray-700 text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors">
+                            Executar Todos os Testes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Types -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Tipos de Notificação</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Backup Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">💾</div>
+                        <h3 class="text-xl font-bold">Backup</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">
+                        Notificações sobre backups realizados, falhas e lembretes de backup.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-backup" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('backup')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sync Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🔄</div>
+                        <h3 class="text-xl font-bold">Sincronização</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">
+                        Notificações sobre sincronização de dados e status de conexão.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-sync" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('sync')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Update Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🆕</div>
+                        <h3 class="text-xl font-bold">Atualizações</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">
+                        Notificações sobre atualizações do sistema e novas funcionalidades.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-updates" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('update')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Reminder Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">⏰</div>
+                        <h3 class="text-xl font-bold">Lembretes</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">
+                        Lembretes personalizados sobre tarefas importantes.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-reminders" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('reminder')" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- System Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">⚙️</div>
+                        <h3 class="text-xl font-bold">Sistema</h3>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        Notificações sobre status do sistema e alertas técnicos.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-system" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('system')" class="bg-white/50 px-3 py-1 rounded text-sm hover:bg-white/70">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Custom Notifications -->
+                <div class="notification-card" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333;">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">✨</div>
+                        <h3 class="text-xl font-bold">Personalizada</h3>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        Notificações personalizadas para casos específicos.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="setting-custom" class="mr-2" checked>
+                            <span class="text-sm">Ativo</span>
+                        </label>
+                        <button onclick="testNotificationType('custom')" class="bg-white/50 px-3 py-1 rounded text-sm hover:bg-white/70">
+                            Testar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">⚙️ Configurações Avançadas</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- General Settings -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Configurações Gerais</h3>
+                    
+                    <div class="space-y-4">
+                        <label class="flex items-center justify-between">
+                            <span class="text-gray-700">Som das notificações</span>
+                            <input type="checkbox" id="setting-sound" class="toggle" checked>
+                        </label>
+                        
+                        <label class="flex items-center justify-between">
+                            <span class="text-gray-700">Vibração</span>
+                            <input type="checkbox" id="setting-vibration" class="toggle" checked>
+                        </label>
+                        
+                        <label class="flex items-center justify-between">
+                            <span class="text-gray-700">Notificações em tela cheia</span>
+                            <input type="checkbox" id="setting-fullscreen" class="toggle">
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Quiet Hours -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Horário Silencioso</h3>
+                    
+                    <div class="space-y-4">
+                        <label class="flex items-center justify-between">
+                            <span class="text-gray-700">Ativar horário silencioso</span>
+                            <input type="checkbox" id="setting-quiet-hours" class="toggle">
+                        </label>
+                        
+                        <div id="quiet-hours-config" class="space-y-3 opacity-50">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Início</label>
+                                <input type="time" id="quiet-start" value="22:00" class="w-full p-2 border rounded-lg">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Fim</label>
+                                <input type="time" id="quiet-end" value="08:00" class="w-full p-2 border rounded-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Settings -->
+            <div class="mt-6 text-center">
+                <button id="save-settings" class="bg-primary-500 text-white px-8 py-3 rounded-lg hover:bg-primary-600 transition-colors">
+                    💾 Salvar Configurações
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Preview Area -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">📱 Preview de Notificações</h2>
+            
+            <div id="notification-preview-area" class="min-h-32">
+                <div class="text-center text-gray-500 py-8">
+                    Clique em "Testar" em qualquer tipo de notificação para ver o preview aqui
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification History -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">📝 Histórico de Notificações</h2>
+                <div class="flex gap-2">
+                    <button id="refresh-history" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        🔄 Atualizar
+                    </button>
+                    <button id="clear-history" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        🗑️ Limpar
+                    </button>
+                </div>
+            </div>
+            
+            <div id="notification-history" class="space-y-4">
+                <div class="text-center text-gray-500 py-8">
+                    Nenhuma notificação no histórico
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Information -->
+        <div class="bg-gray-900 text-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-2xl font-bold mb-6">🔧 Informações Técnicas</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-400 mb-4">Service Worker</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Status:</span>
+                            <span id="sw-status" class="text-green-400">Carregando...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Push Manager:</span>
+                            <span id="push-manager-status" class="text-green-400">Carregando...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">VAPID Support:</span>
+                            <span id="vapid-support" class="text-green-400">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-green-400 mb-4">Navegador</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Notifications API:</span>
+                            <span id="notifications-api" class="text-green-400">Carregando...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Push API:</span>
+                            <span id="push-api" class="text-green-400">Carregando...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">User Agent:</span>
+                            <span id="user-agent" class="text-gray-400 text-xs">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Subscription Details -->
+            <div class="mt-8 p-4 bg-gray-800 rounded-lg">
+                <h4 class="font-semibold mb-3">Detalhes da Inscrição:</h4>
+                <pre id="subscription-details" class="text-xs text-gray-300 overflow-x-auto">
+Aguardando inscrição...
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/js/push-notification-manager.js"></script>
+    
+    <script>
+        // Push Notifications Page Controller
+        class PushNotificationsController {
+            constructor() {
+                this.pushManager = null;
+                this.init();
+            }
+            
+            async init() {
+                console.log('🔔 Push Notifications Controller iniciando...');
+                
+                // Wait for push manager to initialize
+                await this.waitForPushManager();
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Update UI
+                this.updateUI();
+                
+                // Load settings
+                this.loadSettings();
+                
+                // Check technical info
+                this.checkTechnicalInfo();
+                
+                console.log('✅ Push Notifications Controller inicializado');
+            }
+            
+            async waitForPushManager() {
+                return new Promise((resolve) => {
+                    const checkManager = () => {
+                        if (window.pushNotificationManager) {
+                            this.pushManager = window.pushNotificationManager;
+                            resolve();
+                        } else {
+                            setTimeout(checkManager, 100);
+                        }
+                    };
+                    checkManager();
+                });
+            }
+            
+            setupEventListeners() {
+                // Subscription controls
+                document.getElementById('enable-notifications')?.addEventListener('click', () => {
+                    this.enableNotifications();
+                });
+                
+                document.getElementById('disable-notifications')?.addEventListener('click', () => {
+                    this.disableNotifications();
+                });
+                
+                document.getElementById('test-permission')?.addEventListener('click', () => {
+                    this.testPermission();
+                });
+                
+                // Test buttons
+                document.getElementById('test-basic')?.addEventListener('click', () => {
+                    this.testBasicNotification();
+                });
+                
+                document.getElementById('test-backup')?.addEventListener('click', () => {
+                    this.testBackupNotification();
+                });
+                
+                document.getElementById('test-sync')?.addEventListener('click', () => {
+                    this.testSyncNotification();
+                });
+                
+                document.getElementById('test-update')?.addEventListener('click', () => {
+                    this.testUpdateNotification();
+                });
+                
+                document.getElementById('test-reminder')?.addEventListener('click', () => {
+                    this.testReminderNotification();
+                });
+                
+                document.getElementById('run-all-tests')?.addEventListener('click', () => {
+                    this.runAllTests();
+                });
+                
+                // Settings
+                document.getElementById('save-settings')?.addEventListener('click', () => {
+                    this.saveSettings();
+                });
+                
+                document.getElementById('setting-quiet-hours')?.addEventListener('change', (e) => {
+                    this.toggleQuietHours(e.target.checked);
+                });
+                
+                // History controls
+                document.getElementById('refresh-history')?.addEventListener('click', () => {
+                    this.refreshHistory();
+                });
+                
+                document.getElementById('clear-history')?.addEventListener('click', () => {
+                    this.clearHistory();
+                });
+                
+                // Notification type settings
+                ['backup', 'sync', 'updates', 'reminders', 'system', 'custom'].forEach(type => {
+                    document.getElementById(`setting-${type}`)?.addEventListener('change', () => {
+                        this.updateNotificationSettings();
+                    });
+                });
+            }
+            
+            async updateUI() {
+                // Update permission badge
+                this.updatePermissionBadge();
+                
+                // Update subscription status
+                this.updateSubscriptionStatus();
+                
+                // Update stats
+                this.updateStats();
+                
+                // Update history
+                this.refreshHistory();
+                
+                // Update every 5 seconds
+                setInterval(() => {
+                    this.updateStats();
+                    this.updateSubscriptionStatus();
+                }, 5000);
+            }
+            
+            updatePermissionBadge() {
+                const badge = document.getElementById('permission-badge');
+                const permission = Notification.permission;
+                
+                switch (permission) {
+                    case 'granted':
+                        badge.className = 'permission-badge permission-granted';
+                        badge.innerHTML = '<span class="w-2 h-2 bg-current rounded-full mr-2"></span>Permissão Concedida';
+                        break;
+                    case 'denied':
+                        badge.className = 'permission-badge permission-denied';
+                        badge.innerHTML = '<span class="w-2 h-2 bg-current rounded-full mr-2"></span>Permissão Negada';
+                        break;
+                    default:
+                        badge.className = 'permission-badge permission-default';
+                        badge.innerHTML = '<span class="w-2 h-2 bg-current rounded-full mr-2"></span>Permissão Pendente';
+                }
+            }
+            
+            updateSubscriptionStatus() {
+                if (!this.pushManager) return;
+                
+                const status = this.pushManager.getSubscriptionStatus();
+                const statusElement = document.getElementById('subscription-status');
+                const endpointElement = document.getElementById('subscription-endpoint');
+                
+                if (status.subscribed) {
+                    statusElement.textContent = 'Conectado';
+                    statusElement.className = 'text-2xl font-bold text-green-600';
+                    endpointElement.textContent = status.endpoint || 'N/A';
+                } else {
+                    statusElement.textContent = 'Desconectado';
+                    statusElement.className = 'text-2xl font-bold text-red-600';
+                    endpointElement.textContent = 'Não inscrito';
+                }
+                
+                // Update subscription details
+                document.getElementById('subscription-details').textContent = 
+                    JSON.stringify(status, null, 2);
+            }
+            
+            updateStats() {
+                if (!this.pushManager) return;
+                
+                const history = this.pushManager.getHistory();
+                
+                const sent = history.filter(item => item.type !== 'click' && item.type !== 'close').length;
+                const clicked = history.filter(item => item.type === 'click').length;
+                const engagementRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
+                
+                document.getElementById('notifications-sent').textContent = sent;
+                document.getElementById('notifications-clicked').textContent = clicked;
+                document.getElementById('engagement-rate').textContent = engagementRate + '%';
+            }
+            
+            // Action handlers
+            async enableNotifications() {
+                if (!this.pushManager) return;
+                
+                const button = document.getElementById('enable-notifications');
+                const originalText = button.textContent;
+                
+                button.textContent = 'Ativando...';
+                button.disabled = true;
+                
+                try {
+                    const success = await this.pushManager.requestPermissionAndSubscribe();
+                    
+                    if (success) {
+                        button.textContent = 'Ativado!';
+                        button.className = button.className.replace('bg-green-500', 'bg-green-600');
+                        
+                        setTimeout(() => {
+                            this.updateUI();
+                        }, 1000);
+                    } else {
+                        button.textContent = 'Falhou';
+                        button.className = button.className.replace('bg-green-500', 'bg-red-500');
+                    }
+                    
+                } catch (error) {
+                    console.error('Erro ao ativar notificações:', error);
+                    button.textContent = 'Erro';
+                    button.className = button.className.replace('bg-green-500', 'bg-red-500');
+                } finally {
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.className = button.className.replace('bg-red-500', 'bg-green-500').replace('bg-green-600', 'bg-green-500');
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+            
+            async disableNotifications() {
+                if (!this.pushManager) return;
+                
+                const button = document.getElementById('disable-notifications');
+                const originalText = button.textContent;
+                
+                button.textContent = 'Desativando...';
+                button.disabled = true;
+                
+                try {
+                    const success = await this.pushManager.unsubscribe();
+                    
+                    if (success) {
+                        button.textContent = 'Desativado!';
+                        
+                        setTimeout(() => {
+                            this.updateUI();
+                        }, 1000);
+                    } else {
+                        button.textContent = 'Falhou';
+                    }
+                    
+                } catch (error) {
+                    console.error('Erro ao desativar notificações:', error);
+                    button.textContent = 'Erro';
+                } finally {
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+            
+            testPermission() {
+                const permission = Notification.permission;
+                
+                alert(`Permissão atual: ${permission}\n\n` +
+                      `granted: Notificações permitidas\n` +
+                      `denied: Notificações bloqueadas\n` +
+                      `default: Permissão não solicitada`);
+                
+                this.updatePermissionBadge();
+            }
+            
+            // Test notifications
+            async testBasicNotification() {
+                await this.pushManager?.sendCustomNotification(
+                    'Notificação de Teste',
+                    'Esta é uma notificação básica de teste do sistema'
+                );
+                this.showNotificationPreview('Notificação de Teste', 'Esta é uma notificação básica de teste');
+            }
+            
+            async testBackupNotification() {
+                await this.pushManager?.sendBackupNotification({
+                    id: 'test_backup_' + Date.now(),
+                    size: '2.5MB'
+                });
+                this.showNotificationPreview('💾 Backup Concluído', 'Backup realizado com sucesso (2.5MB)');
+            }
+            
+            async testSyncNotification() {
+                await this.pushManager?.sendSyncNotification({
+                    count: 7
+                });
+                this.showNotificationPreview('🔄 Sincronização Completa', '7 itens sincronizados com sucesso');
+            }
+            
+            async testUpdateNotification() {
+                await this.pushManager?.sendUpdateNotification({
+                    version: '2.3.0'
+                });
+                this.showNotificationPreview('🆕 Atualização Disponível', 'Nova versão 2.3.0 disponível');
+            }
+            
+            async testReminderNotification() {
+                await this.pushManager?.sendReminderNotification({
+                    id: 'test_reminder_' + Date.now(),
+                    message: 'Lembrete: Fazer backup dos dados importantes',
+                    url: '/backup-complete.html'
+                });
+                this.showNotificationPreview('⏰ Lembrete', 'Lembrete: Fazer backup dos dados importantes');
+            }
+            
+            async runAllTests() {
+                if (!this.pushManager) return;
+                
+                const button = document.getElementById('run-all-tests');
+                const originalText = button.textContent;
+                
+                button.textContent = 'Executando...';
+                button.disabled = true;
+                
+                try {
+                    await this.pushManager.runNotificationTests();
+                    button.textContent = 'Executado!';
+                } catch (error) {
+                    button.textContent = 'Erro';
+                } finally {
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 3000);
+                }
+            }
+            
+            showNotificationPreview(title, body) {
+                const previewArea = document.getElementById('notification-preview-area');
+                
+                const preview = document.createElement('div');
+                preview.className = 'notification-preview show';
+                preview.innerHTML = `
+                    <div class="flex items-start">
+                        <img src="/assets/images/icon-32.png" alt="Icon" class="w-10 h-10 mr-3 mt-1">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900">${title}</div>
+                            <div class="text-sm text-gray-600 mt-1">${body}</div>
+                            <div class="text-xs text-gray-400 mt-2">${new Date().toLocaleTimeString()}</div>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600 ml-2">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                
+                previewArea.appendChild(preview);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (preview.parentElement) {
+                        preview.classList.remove('show');
+                        setTimeout(() => preview.remove(), 500);
+                    }
+                }, 5000);
+            }
+            
+            // Settings management
+            loadSettings() {
+                if (!this.pushManager) return;
+                
+                const settings = this.pushManager.getSettings();
+                
+                document.getElementById('setting-backup').checked = settings.showBackup;
+                document.getElementById('setting-sync').checked = settings.showSync;
+                document.getElementById('setting-updates').checked = settings.showUpdates;
+                document.getElementById('setting-reminders').checked = settings.showReminders;
+                document.getElementById('setting-sound').checked = settings.sound;
+                document.getElementById('setting-vibration').checked = settings.vibration;
+                document.getElementById('setting-quiet-hours').checked = settings.quietHours.enabled;
+                document.getElementById('quiet-start').value = settings.quietHours.start;
+                document.getElementById('quiet-end').value = settings.quietHours.end;
+                
+                this.toggleQuietHours(settings.quietHours.enabled);
+            }
+            
+            saveSettings() {
+                if (!this.pushManager) return;
+                
+                const settings = {
+                    showBackup: document.getElementById('setting-backup').checked,
+                    showSync: document.getElementById('setting-sync').checked,
+                    showUpdates: document.getElementById('setting-updates').checked,
+                    showReminders: document.getElementById('setting-reminders').checked,
+                    sound: document.getElementById('setting-sound').checked,
+                    vibration: document.getElementById('setting-vibration').checked,
+                    quietHours: {
+                        enabled: document.getElementById('setting-quiet-hours').checked,
+                        start: document.getElementById('quiet-start').value,
+                        end: document.getElementById('quiet-end').value
+                    }
+                };
+                
+                this.pushManager.updateSettings(settings);
+                
+                // Show feedback
+                const button = document.getElementById('save-settings');
+                const originalText = button.textContent;
+                button.textContent = '✅ Salvo!';
+                button.className = button.className.replace('bg-primary-500', 'bg-green-500');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.className = button.className.replace('bg-green-500', 'bg-primary-500');
+                }, 2000);
+            }
+            
+            updateNotificationSettings() {
+                // Auto-save when individual notification type settings change
+                this.saveSettings();
+            }
+            
+            toggleQuietHours(enabled) {
+                const config = document.getElementById('quiet-hours-config');
+                if (enabled) {
+                    config.style.opacity = '1';
+                    config.querySelectorAll('input').forEach(input => input.disabled = false);
+                } else {
+                    config.style.opacity = '0.5';
+                    config.querySelectorAll('input').forEach(input => input.disabled = true);
+                }
+            }
+            
+            // History management
+            refreshHistory() {
+                if (!this.pushManager) return;
+                
+                const history = this.pushManager.getHistory(20);
+                const historyContainer = document.getElementById('notification-history');
+                
+                if (history.length === 0) {
+                    historyContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            Nenhuma notificação no histórico
+                        </div>
+                    `;
+                    return;
+                }
+                
+                historyContainer.innerHTML = history.map(item => {
+                    const icon = this.getTypeIcon(item.type || item.notificationType);
+                    const time = new Date(item.timestamp).toLocaleString();
+                    
+                    let content = '';
+                    if (item.type === 'click') {
+                        content = `🖱️ Clicou em notificação de ${item.notificationType} (${item.action})`;
+                    } else if (item.type === 'close') {
+                        content = `❌ Fechou notificação de ${item.notificationType}`;
+                    } else {
+                        content = `${icon} ${item.title || 'Notificação'} - ${item.body || ''}`;
+                    }
+                    
+                    return `
+                        <div class="history-item">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900">${content}</div>
+                                    <div class="text-sm text-gray-500 mt-1">${time}</div>
+                                </div>
+                                <div class="text-xs text-gray-400 ml-4">ID: ${item.id}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            clearHistory() {
+                if (!this.pushManager) return;
+                
+                if (confirm('Tem certeza que deseja limpar todo o histórico de notificações?')) {
+                    this.pushManager.clearHistory();
+                    this.refreshHistory();
+                    this.updateStats();
+                }
+            }
+            
+            getTypeIcon(type) {
+                const icons = {
+                    backup: '💾',
+                    sync: '🔄',
+                    update: '🆕',
+                    reminder: '⏰',
+                    custom: '✨',
+                    system: '⚙️'
+                };
+                return icons[type] || '🔔';
+            }
+            
+            // Technical info
+            checkTechnicalInfo() {
+                // Service Worker status
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        document.getElementById('sw-status').textContent = 'Ativo';
+                        document.getElementById('push-manager-status').textContent = 
+                            'pushManager' in registration ? 'Suportado' : 'Não suportado';
+                    }).catch(() => {
+                        document.getElementById('sw-status').textContent = 'Erro';
+                        document.getElementById('sw-status').className = 'text-red-400';
+                    });
+                } else {
+                    document.getElementById('sw-status').textContent = 'Não suportado';
+                    document.getElementById('sw-status').className = 'text-red-400';
+                }
+                
+                // Browser capabilities
+                document.getElementById('notifications-api').textContent = 
+                    'Notification' in window ? 'Suportado' : 'Não suportado';
+                    
+                document.getElementById('push-api').textContent = 
+                    'PushManager' in window ? 'Suportado' : 'Não suportado';
+                    
+                document.getElementById('vapid-support').textContent = 
+                    'applicationServerKey' in PushSubscriptionOptions.prototype ? 'Suportado' : 'Não suportado';
+                    
+                document.getElementById('user-agent').textContent = navigator.userAgent;
+            }
+        }
+        
+        // Global test function
+        function testNotificationType(type) {
+            const controller = window.pushController;
+            if (!controller) return;
+            
+            switch (type) {
+                case 'backup':
+                    controller.testBackupNotification();
+                    break;
+                case 'sync':
+                    controller.testSyncNotification();
+                    break;
+                case 'update':
+                    controller.testUpdateNotification();
+                    break;
+                case 'reminder':
+                    controller.testReminderNotification();
+                    break;
+                case 'custom':
+                    controller.testBasicNotification();
+                    break;
+                case 'system':
+                    controller.pushManager?.sendCustomNotification(
+                        '⚙️ Sistema',
+                        'Notificação de sistema de teste'
+                    );
+                    controller.showNotificationPreview('⚙️ Sistema', 'Notificação de sistema de teste');
+                    break;
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.pushController = new PushNotificationsController();
+        });
+    </script>
+</body>
+</html>

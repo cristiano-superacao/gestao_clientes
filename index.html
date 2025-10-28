@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Clientes</title>
+    <!-- Carrega Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilização para a fonte Inter e fundo geral */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5',
+                        'secondary': '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="app" class="flex-grow p-4 md:p-8">
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-8">
+            <h1 class="text-3xl font-bold text-primary">Sistema de Gestão de Clientes</h1>
+            <p id="user-info" class="text-sm text-gray-600 mt-1">Carregando usuário...</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Coluna do Perfil do Usuário -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Meu Perfil</h2>
+                    <div id="profile-status" class="text-sm italic text-gray-500">Carregando dados do perfil...</div>
+                    <div id="profile-data" class="mt-4 hidden">
+                        <!-- Os dados do perfil serão injetados aqui -->
+                        <p class="text-gray-800"><strong class="font-medium">Nome:</strong> <span id="profile-name"></span></p>
+                        <p class="text-gray-800"><strong class="font-medium">Empresa:</strong> <span id="profile-company"></span></p>
+                    </div>
+                    <button id="save-profile-btn" class="mt-4 w-full bg-secondary text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition duration-150">
+                        Salvar Perfil Padrão
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna de Listagem de Clientes -->
+            <div class="lg:col-span-2">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Clientes Cadastrados</h2>
+                    <ul id="client-list" class="space-y-4">
+                        <li class="p-4 bg-gray-50 rounded-lg text-gray-600">Nenhum cliente encontrado.</li>
+                    </ul>
+                    <div id="client-error" class="hidden text-red-500 mt-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals e Loaders -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-white text-lg flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Inicializando...
+        </div>
+    </div>
+
+    <!-- Script principal com lógica Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais (fornecidas pelo ambiente Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId = null;
+
+        // Configuração para log de depuração do Firestore
+        setLogLevel('debug');
+        
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const userInfoEl = document.getElementById('user-info');
+        const profileStatusEl = document.getElementById('profile-status');
+        const profileDataEl = document.getElementById('profile-data');
+        const profileNameEl = document.getElementById('profile-name');
+        const profileCompanyEl = document.getElementById('profile-company');
+        const clientListEl = document.getElementById('client-list');
+        const clientErrorEl = document.getElementById('client-error');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+
+        // Função para carregar os dados do perfil do usuário
+        async function loadUserProfile() {
+            if (!db || !userId) return;
+
+            // CORREÇÃO CRÍTICA: O caminho do documento deve ter um NÚMERO PAR de segmentos (Coleção/Documento/Coleção/Documento...).
+            // O caminho anterior '.../profile' (5 segmentos) estava incorreto.
+            // Corrigido para '.../profile/data' (6 segmentos), onde 'profile' é uma coleção e 'data' é o ID do documento.
+            // Caminho completo: artifacts/{appId}/users/{userId}/profile/data
+            try {
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const profileSnap = await getDoc(profileDocRef);
+
+                if (profileSnap.exists()) {
+                    const data = profileSnap.data();
+                    profileNameEl.textContent = data.name || 'N/A';
+                    profileCompanyEl.textContent = data.company || 'N/A';
+                    profileStatusEl.textContent = 'Dados carregados.';
+                    profileDataEl.classList.remove('hidden');
+                } else {
+                    profileStatusEl.textContent = 'Perfil não encontrado. Clique em Salvar para criar um.';
+                    profileDataEl.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Erro ao carregar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao carregar: ${error.message}`;
+            }
+        }
+
+        // Função para salvar um perfil padrão
+        async function saveDefaultProfile() {
+            if (!db || !userId) return;
+
+            try {
+                // Usa o caminho corrigido
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const defaultData = {
+                    name: 'Usuário Gestor',
+                    company: 'Minha Empresa de Clientes',
+                    createdAt: serverTimestamp()
+                };
+                
+                // setDoc cria ou substitui o documento
+                await setDoc(profileDocRef, defaultData);
+                
+                profileNameEl.textContent = defaultData.name;
+                profileCompanyEl.textContent = defaultData.company;
+                profileStatusEl.textContent = 'Perfil padrão salvo com sucesso!';
+                profileDataEl.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Erro ao salvar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao salvar: ${error.message}`;
+            }
+        }
+        
+        // Listener em tempo real para a lista de clientes (exemplo de dados públicos)
+        function setupClientListener() {
+            if (!db) return;
+
+            // Caminho para dados públicos de clientes: artifacts/{appId}/public/data/clients
+            const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+            
+            // onSnapshot para escutar mudanças em tempo real
+            onSnapshot(clientsColRef, (snapshot) => {
+                const clients = [];
+                snapshot.forEach(doc => {
+                    clients.push({ id: doc.id, ...doc.data() });
+                });
+
+                clientListEl.innerHTML = '';
+                if (clients.length === 0) {
+                    clientListEl.innerHTML = '<li class="p-4 bg-gray-50 rounded-lg text-gray-600">Nenhum cliente cadastrado.</li>';
+                } else {
+                    clients.forEach(client => {
+                        const li = document.createElement('li');
+                        li.className = 'p-4 bg-primary bg-opacity-5 rounded-lg border-l-4 border-primary shadow';
+                        li.innerHTML = `
+                            <p class="text-lg font-medium text-gray-800">${client.name || 'Cliente Sem Nome'}</p>
+                            <p class="text-sm text-gray-600">ID: ${client.id}</p>
+                            <p class="text-sm text-gray-600">Email: ${client.email || 'N/A'}</p>
+                        `;
+                        clientListEl.appendChild(li);
+                    });
+                }
+            }, (error) => {
+                console.error("Erro no listener de clientes:", error);
+                clientErrorEl.textContent = `Erro ao carregar clientes: ${error.message}`;
+                clientErrorEl.classList.remove('hidden');
+            });
+        }
+
+        // Inicialização do Firebase e Autenticação
+        window.onload = async function() {
+            try {
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Configuração do Firebase não fornecida.");
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autenticação
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Observador de estado de autenticação para configurar o app após o login
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userInfoEl.textContent = `Usuário ID: ${userId} (Autenticado)`;
+                        // Carregar perfil e clientes após autenticação
+                        loadUserProfile();
+                        setupClientListener();
+                    } else {
+                        userId = null;
+                        userInfoEl.textContent = 'Usuário: Anônimo (Não Autenticado)';
+                        profileStatusEl.textContent = 'Por favor, aguarde a autenticação.';
+                    }
+                    loadingOverlay.classList.add('hidden');
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase:", error);
+                userInfoEl.textContent = `Erro de Inicialização: ${error.message}`;
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Adiciona o evento de clique ao botão Salvar Perfil
+        saveProfileBtn.addEventListener('click', saveDefaultProfile);
+        
+        // Exemplo: Função para adicionar um novo cliente (apenas para demonstração)
+        async function addExampleClient() {
+             if (!db || !userId) return;
+             try {
+                const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+                await addDoc(clientsColRef, {
+                    name: `Novo Cliente ${Date.now() % 100}`,
+                    email: `client${Date.now() % 100}@example.com`,
+                    addedBy: userId,
+                    timestamp: serverTimestamp()
+                });
+                console.log("Cliente de exemplo adicionado.");
+             } catch (e) {
+                console.error("Erro ao adicionar cliente de exemplo: ", e);
+             }
+        }
+
+        // Adiciona um cliente de exemplo a cada 10 segundos
+        // setInterval(addExampleClient, 10000); 
+
+    </script>
+</body>
+</html>

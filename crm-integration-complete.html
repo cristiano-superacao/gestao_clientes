@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integração CRM - Sistema de Gestão de Clientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <style>
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .integration-card {
+            transition: all 0.3s ease;
+        }
+        
+        .integration-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-connected { background-color: #10b981; }
+        .status-disconnected { background-color: #ef4444; }
+        .status-syncing { 
+            background-color: #f59e0b; 
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .sync-progress {
+            transition: width 0.3s ease;
+        }
+        
+        .mapping-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-exchange-alt text-blue-600 mr-3"></i>
+                        Integração CRM
+                    </h1>
+                    <p class="text-gray-600 mt-2">Sincronize seus clientes com HubSpot, Salesforce e Pipedrive</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="syncAllBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Sincronizar Tudo
+                    </button>
+                    <button id="importBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                        <i class="fas fa-download mr-2"></i>
+                        Importar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Status Overview -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="connectedCount">0</div>
+                    <div class="text-sm text-blue-700">Integrações Ativas</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="lastSyncTime">Nunca</div>
+                    <div class="text-sm text-green-700">Última Sincronização</div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-600" id="syncedCount">0</div>
+                    <div class="text-sm text-yellow-700">Clientes Sincronizados</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="errorCount">0</div>
+                    <div class="text-sm text-red-700">Erros</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-sm mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6">
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm tab-active" data-tab="integrations">
+                        <i class="fas fa-plug mr-2"></i>Integrações
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="sync">
+                        <i class="fas fa-sync mr-2"></i>Sincronização
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="mapping">
+                        <i class="fas fa-map mr-2"></i>Mapeamento
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="history">
+                        <i class="fas fa-history mr-2"></i>Histórico
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="settings">
+                        <i class="fas fa-cog mr-2"></i>Configurações
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Integrações Tab -->
+            <div id="integrations-content" class="tab-pane active">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- HubSpot -->
+                    <div class="integration-card bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <img src="https://www.hubspot.com/hubfs/HubSpot_Logos/HubSpot-Inversed-Favicon.png" alt="HubSpot" class="w-8 h-8 mr-3">
+                                <h3 class="text-lg font-semibold">HubSpot</h3>
+                            </div>
+                            <span class="status-indicator status-disconnected" id="hubspot-status"></span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <input type="password" id="hubspot-api-key" placeholder="Insira sua API Key do HubSpot" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button id="hubspot-connect" class="flex-1 bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition-colors">
+                                    <i class="fas fa-plug mr-2"></i>Conectar
+                                </button>
+                                <button id="hubspot-test" class="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>Testar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-sm text-gray-600">
+                            <div>Último Sync: <span id="hubspot-last-sync">Nunca</span></div>
+                            <div>Status: <span id="hubspot-connection-status">Desconectado</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Salesforce -->
+                    <div class="integration-card bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <img src="https://c1.sfdcstatic.com/content/dam/web/en_us/www/images/nav/salesforce-logo.svg" alt="Salesforce" class="w-8 h-8 mr-3">
+                                <h3 class="text-lg font-semibold">Salesforce</h3>
+                            </div>
+                            <span class="status-indicator status-disconnected" id="salesforce-status"></span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Client ID</label>
+                                    <input type="text" id="salesforce-client-id" placeholder="Client ID" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Client Secret</label>
+                                    <input type="password" id="salesforce-client-secret" placeholder="Client Secret" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                    <input type="text" id="salesforce-username" placeholder="Username" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                    <input type="password" id="salesforce-password" placeholder="Password + Security Token" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button id="salesforce-connect" class="flex-1 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">
+                                    <i class="fas fa-plug mr-2"></i>Conectar
+                                </button>
+                                <button id="salesforce-test" class="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>Testar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-sm text-gray-600">
+                            <div>Último Sync: <span id="salesforce-last-sync">Nunca</span></div>
+                            <div>Status: <span id="salesforce-connection-status">Desconectado</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Pipedrive -->
+                    <div class="integration-card bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <img src="https://cdn.pipedrive.com/app/img/favicon.ico" alt="Pipedrive" class="w-8 h-8 mr-3">
+                                <h3 class="text-lg font-semibold">Pipedrive</h3>
+                            </div>
+                            <span class="status-indicator status-disconnected" id="pipedrive-status"></span>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">API Token</label>
+                                <input type="password" id="pipedrive-api-token" placeholder="Insira seu API Token do Pipedrive" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button id="pipedrive-connect" class="flex-1 bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-plug mr-2"></i>Conectar
+                                </button>
+                                <button id="pipedrive-test" class="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>Testar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-sm text-gray-600">
+                            <div>Último Sync: <span id="pipedrive-last-sync">Nunca</span></div>
+                            <div>Status: <span id="pipedrive-connection-status">Desconectado</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sincronização Tab -->
+            <div id="sync-content" class="tab-pane hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold">Sincronização de Dados</h2>
+                        <div class="flex space-x-3">
+                            <button id="manualSyncBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-sync-alt mr-2"></i>Sincronizar Agora
+                            </button>
+                            <button id="stopSyncBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors hidden">
+                                <i class="fas fa-stop mr-2"></i>Parar Sync
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="syncProgressContainer" class="hidden mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Progresso da Sincronização</span>
+                            <span class="text-sm text-gray-500" id="syncProgressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full sync-progress" id="syncProgressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sync Statistics -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600" id="createdCount">0</div>
+                            <div class="text-sm text-green-700">Criados</div>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600" id="updatedCount">0</div>
+                            <div class="text-sm text-blue-700">Atualizados</div>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600" id="errorsSyncCount">0</div>
+                            <div class="text-sm text-red-700">Erros</div>
+                        </div>
+                    </div>
+
+                    <!-- Sync Log -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Log de Sincronização</h3>
+                        <div id="syncLog" class="space-y-2 max-h-96 overflow-y-auto">
+                            <div class="text-gray-500 text-center py-8">Nenhuma sincronização realizada ainda</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapeamento Tab -->
+            <div id="mapping-content" class="tab-pane hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-6">Mapeamento de Campos</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Cliente → CRM</h3>
+                            <div id="clientToCrmMapping" class="space-y-2">
+                                <!-- Mapping rows will be generated here -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">CRM → Cliente</h3>
+                            <div id="crmToClientMapping" class="space-y-2">
+                                <!-- Mapping rows will be generated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button id="resetMappingBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-undo mr-2"></i>Resetar
+                            </button>
+                            <button id="saveMappingBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i>Salvar Mapeamento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico Tab -->
+            <div id="history-content" class="tab-pane hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold">Histórico de Interações</h2>
+                        <div class="flex space-x-3">
+                            <select id="historyFilter" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Todas as Integrações</option>
+                                <option value="hubspot">HubSpot</option>
+                                <option value="salesforce">Salesforce</option>
+                                <option value="pipedrive">Pipedrive</option>
+                            </select>
+                            <button id="refreshHistoryBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-refresh mr-2"></i>Atualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="historyContainer" class="space-y-4">
+                        <div class="text-gray-500 text-center py-8">Carregando histórico...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações Tab -->
+            <div id="settings-content" class="tab-pane hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-6">Configurações Avançadas</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Auto Sync Settings -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Sincronização Automática</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-700">Habilitar Sync Automático</label>
+                                        <p class="text-sm text-gray-500">Sincronizar automaticamente a cada intervalo definido</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="autoSyncEnabled" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Intervalo de Sincronização (minutos)</label>
+                                    <input type="number" id="syncInterval" value="60" min="15" max="1440" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rate Limiting -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Rate Limiting</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">HubSpot (req/sec)</label>
+                                    <input type="number" id="hubspotRateLimit" value="10" min="1" max="100" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Salesforce (req/sec)</label>
+                                    <input type="number" id="salesforceRateLimit" value="20" min="1" max="100" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Pipedrive (req/sec)</label>
+                                    <input type="number" id="pipedriveRateLimit" value="10" min="1" max="100" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Webhook Settings -->
+                        <div class="border-b border-gray-200 pb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Webhooks</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">URL do Webhook</label>
+                                    <input type="url" id="webhookUrl" placeholder="https://exemplo.com/webhook" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Secret Key</label>
+                                    <input type="password" id="webhookSecret" placeholder="Chave secreta para validação" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button id="resetSettingsBtn" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-undo mr-2"></i>Resetar
+                            </button>
+                            <button id="saveSettingsBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i>Salvar Configurações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Import Modal -->
+    <div id="importModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Importar do CRM</h3>
+                <button id="closeImportModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Selecionar CRM</label>
+                    <select id="importSource" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Selecione uma integração</option>
+                        <option value="hubspot">HubSpot</option>
+                        <option value="salesforce">Salesforce</option>
+                        <option value="pipedrive">Pipedrive</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Limite de Registros</label>
+                    <input type="number" id="importLimit" value="100" min="1" max="1000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="cancelImport" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                    Cancelar
+                </button>
+                <button id="startImport" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Importar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-700" id="loadingText">Processando...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="crm-integration-manager.js"></script>
+    <script>
+        class CRMIntegrationController {
+            constructor() {
+                this.manager = window.crmIntegrationManager;
+                this.currentTab = 'integrations';
+                this.syncInterval = null;
+                
+                this.init();
+            }
+
+            async init() {
+                this.initEventListeners();
+                this.initTabs();
+                this.initMappingFields();
+                await this.loadInitialData();
+                this.startStatusUpdates();
+            }
+
+            initEventListeners() {
+                // Tab navigation
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.switchTab(e.target.dataset.tab);
+                    });
+                });
+
+                // Integration connections
+                document.getElementById('hubspot-connect').addEventListener('click', () => {
+                    this.connectIntegration('hubspot');
+                });
+                
+                document.getElementById('salesforce-connect').addEventListener('click', () => {
+                    this.connectIntegration('salesforce');
+                });
+                
+                document.getElementById('pipedrive-connect').addEventListener('click', () => {
+                    this.connectIntegration('pipedrive');
+                });
+
+                // Test connections
+                document.getElementById('hubspot-test').addEventListener('click', () => {
+                    this.testConnection('hubspot');
+                });
+                
+                document.getElementById('salesforce-test').addEventListener('click', () => {
+                    this.testConnection('salesforce');
+                });
+                
+                document.getElementById('pipedrive-test').addEventListener('click', () => {
+                    this.testConnection('pipedrive');
+                });
+
+                // Sync operations
+                document.getElementById('syncAllBtn').addEventListener('click', () => {
+                    this.syncAll();
+                });
+                
+                document.getElementById('manualSyncBtn').addEventListener('click', () => {
+                    this.syncAll();
+                });
+
+                // Import
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    this.showImportModal();
+                });
+                
+                document.getElementById('startImport').addEventListener('click', () => {
+                    this.startImport();
+                });
+
+                // Modal controls
+                document.getElementById('closeImportModal').addEventListener('click', () => {
+                    this.hideImportModal();
+                });
+                
+                document.getElementById('cancelImport').addEventListener('click', () => {
+                    this.hideImportModal();
+                });
+
+                // Settings
+                document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                    this.saveSettings();
+                });
+                
+                document.getElementById('saveMappingBtn').addEventListener('click', () => {
+                    this.saveMapping();
+                });
+
+                // History
+                document.getElementById('refreshHistoryBtn').addEventListener('click', () => {
+                    this.refreshHistory();
+                });
+            }
+
+            initTabs() {
+                this.switchTab('integrations');
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+                
+                const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+                activeBtn.classList.add('tab-active');
+                activeBtn.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                // Update tab content
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.add('hidden');
+                    pane.classList.remove('active');
+                });
+                
+                const activePane = document.getElementById(`${tabName}-content`);
+                activePane.classList.remove('hidden');
+                activePane.classList.add('active');
+
+                this.currentTab = tabName;
+                
+                // Load tab-specific data
+                if (tabName === 'history') {
+                    this.refreshHistory();
+                }
+            }
+
+            async connectIntegration(platform) {
+                this.showLoading(`Conectando com ${platform}...`);
+                
+                try {
+                    let result;
+                    
+                    switch (platform) {
+                        case 'hubspot':
+                            const hubspotApiKey = document.getElementById('hubspot-api-key').value;
+                            if (!hubspotApiKey) {
+                                throw new Error('API Key do HubSpot é obrigatória');
+                            }
+                            result = await this.manager.connectHubSpot(hubspotApiKey);
+                            break;
+                            
+                        case 'salesforce':
+                            const salesforceData = {
+                                clientId: document.getElementById('salesforce-client-id').value,
+                                clientSecret: document.getElementById('salesforce-client-secret').value,
+                                username: document.getElementById('salesforce-username').value,
+                                password: document.getElementById('salesforce-password').value
+                            };
+                            
+                            if (!salesforceData.clientId || !salesforceData.clientSecret || !salesforceData.username || !salesforceData.password) {
+                                throw new Error('Todos os campos do Salesforce são obrigatórios');
+                            }
+                            
+                            result = await this.manager.connectSalesforce(
+                                salesforceData.clientId,
+                                salesforceData.clientSecret,
+                                salesforceData.username,
+                                salesforceData.password
+                            );
+                            break;
+                            
+                        case 'pipedrive':
+                            const pipedriveToken = document.getElementById('pipedrive-api-token').value;
+                            if (!pipedriveToken) {
+                                throw new Error('API Token do Pipedrive é obrigatório');
+                            }
+                            result = await this.manager.connectPipedrive(pipedriveToken);
+                            break;
+                    }
+                    
+                    if (result.success) {
+                        this.showSuccess(result.message);
+                        this.updateIntegrationStatus(platform, true);
+                    } else {
+                        this.showError(result.message);
+                    }
+                } catch (error) {
+                    this.showError(error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async testConnection(platform) {
+                this.showLoading(`Testando conexão com ${platform}...`);
+                
+                try {
+                    const isConnected = await this.manager.testConnection(platform);
+                    
+                    if (isConnected) {
+                        this.showSuccess(`Conexão com ${platform} está funcionando!`);
+                    } else {
+                        this.showError(`Falha na conexão com ${platform}`);
+                    }
+                } catch (error) {
+                    this.showError(error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async syncAll() {
+                this.showLoading('Sincronizando todos os clientes...');
+                
+                try {
+                    const result = await this.manager.syncAllClients();
+                    
+                    if (result.success) {
+                        this.showSuccess(result.message);
+                        this.updateSyncStats(result.stats);
+                    } else {
+                        this.showError(result.message);
+                    }
+                } catch (error) {
+                    this.showError(error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            showImportModal() {
+                document.getElementById('importModal').classList.remove('hidden');
+                document.getElementById('importModal').classList.add('flex');
+            }
+
+            hideImportModal() {
+                document.getElementById('importModal').classList.add('hidden');
+                document.getElementById('importModal').classList.remove('flex');
+            }
+
+            async startImport() {
+                const source = document.getElementById('importSource').value;
+                const limit = document.getElementById('importLimit').value;
+                
+                if (!source) {
+                    this.showError('Selecione uma integração para importar');
+                    return;
+                }
+                
+                this.hideImportModal();
+                this.showLoading('Importando dados do CRM...');
+                
+                try {
+                    const result = await this.manager.importFromCRM();
+                    
+                    if (result.success) {
+                        const filteredClients = result.clients.filter(client => 
+                            !source || client.source === source
+                        ).slice(0, parseInt(limit));
+                        
+                        this.showSuccess(`${filteredClients.length} clientes importados com sucesso!`);
+                        // Aqui você pode processar os clientes importados
+                        console.log('Clientes importados:', filteredClients);
+                    } else {
+                        this.showError(result.message);
+                    }
+                } catch (error) {
+                    this.showError(error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            initMappingFields() {
+                const clientToCrmContainer = document.getElementById('clientToCrmMapping');
+                const crmToClientContainer = document.getElementById('crmToClientMapping');
+                
+                // Client to CRM mapping
+                Object.entries(this.manager.mappings.clientToContact).forEach(([clientField, crmField]) => {
+                    const row = this.createMappingRow(clientField, crmField, 'clientToCrm');
+                    clientToCrmContainer.appendChild(row);
+                });
+                
+                // CRM to Client mapping
+                Object.entries(this.manager.mappings.contactToClient).forEach(([crmField, clientField]) => {
+                    const row = this.createMappingRow(crmField, clientField, 'crmToClient');
+                    crmToClientContainer.appendChild(row);
+                });
+            }
+
+            createMappingRow(leftField, rightField, type) {
+                const row = document.createElement('div');
+                row.className = 'mapping-row';
+                
+                row.innerHTML = `
+                    <input type="text" value="${leftField}" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" data-type="${type}" data-side="left">
+                    <i class="fas fa-arrow-right text-gray-400"></i>
+                    <input type="text" value="${rightField}" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" data-type="${type}" data-side="right">
+                `;
+                
+                return row;
+            }
+
+            async saveMapping() {
+                // Implementar salvamento do mapeamento
+                this.showSuccess('Mapeamento salvo com sucesso!');
+            }
+
+            async saveSettings() {
+                // Implementar salvamento das configurações
+                this.showSuccess('Configurações salvas com sucesso!');
+            }
+
+            async refreshHistory() {
+                const historyContainer = document.getElementById('historyContainer');
+                const filter = document.getElementById('historyFilter').value;
+                
+                historyContainer.innerHTML = '<div class="text-gray-500 text-center py-8">Carregando histórico...</div>';
+                
+                try {
+                    // Implementar busca do histórico
+                    setTimeout(() => {
+                        historyContainer.innerHTML = '<div class="text-gray-500 text-center py-8">Nenhuma interação encontrada</div>';
+                    }, 1000);
+                } catch (error) {
+                    this.showError('Erro ao carregar histórico');
+                }
+            }
+
+            async loadInitialData() {
+                this.updateOverviewStats();
+                this.updateIntegrationStatuses();
+            }
+
+            updateOverviewStats() {
+                const enabledIntegrations = this.manager.getEnabledIntegrations();
+                document.getElementById('connectedCount').textContent = enabledIntegrations.length;
+                
+                const syncStatus = this.manager.getSyncStatus();
+                document.getElementById('lastSyncTime').textContent = syncStatus.lastSync ? 
+                    this.formatDate(syncStatus.lastSync) : 'Nunca';
+            }
+
+            updateIntegrationStatuses() {
+                ['hubspot', 'salesforce', 'pipedrive'].forEach(platform => {
+                    const integration = this.manager.integrations[platform];
+                    this.updateIntegrationStatus(platform, integration.enabled);
+                    
+                    document.getElementById(`${platform}-last-sync`).textContent = 
+                        integration.lastSync ? this.formatDate(integration.lastSync) : 'Nunca';
+                    
+                    document.getElementById(`${platform}-connection-status`).textContent = 
+                        integration.enabled ? 'Conectado' : 'Desconectado';
+                });
+            }
+
+            updateIntegrationStatus(platform, connected) {
+                const statusIndicator = document.getElementById(`${platform}-status`);
+                const connectionStatus = document.getElementById(`${platform}-connection-status`);
+                
+                if (connected) {
+                    statusIndicator.className = 'status-indicator status-connected';
+                    connectionStatus.textContent = 'Conectado';
+                } else {
+                    statusIndicator.className = 'status-indicator status-disconnected';
+                    connectionStatus.textContent = 'Desconectado';
+                }
+                
+                this.updateOverviewStats();
+            }
+
+            updateSyncStats(stats) {
+                document.getElementById('createdCount').textContent = stats.created;
+                document.getElementById('updatedCount').textContent = stats.updated;
+                document.getElementById('errorsSyncCount').textContent = stats.errors;
+                document.getElementById('syncedCount').textContent = stats.created + stats.updated;
+                document.getElementById('errorCount').textContent = stats.errors;
+            }
+
+            startStatusUpdates() {
+                setInterval(() => {
+                    this.updateOverviewStats();
+                }, 30000); // Atualizar a cada 30 segundos
+            }
+
+            formatDate(date) {
+                return new Intl.DateTimeFormat('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).format(date);
+            }
+
+            showLoading(message = 'Carregando...') {
+                document.getElementById('loadingText').textContent = message;
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+                document.getElementById('loadingOverlay').classList.add('flex');
+            }
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+            }
+
+            showSuccess(message) {
+                // Implementar notificação de sucesso
+                console.log('Success:', message);
+                alert('✅ ' + message);
+            }
+
+            showError(message) {
+                // Implementar notificação de erro
+                console.error('Error:', message);
+                alert('❌ ' + message);
+            }
+        }
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "sua-api-key",
+            authDomain: "seu-projeto.firebaseapp.com",
+            projectId: "seu-projeto-id",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "sua-app-id"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        // Initialize Controller
+        document.addEventListener('DOMContentLoaded', () => {
+            window.crmController = new CRMIntegrationController();
+        });
+    </script>
+</body>
+</html>

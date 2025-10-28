@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Analytics - Sistema de Gestão de Clientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .prediction-card {
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .risk-high { 
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-left: 4px solid #ef4444;
+        }
+        
+        .risk-medium { 
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .risk-low { 
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-left: 4px solid #10b981;
+        }
+        
+        .segment-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2;
+            transition: stroke-dashoffset 0.35s;
+        }
+        
+        .training-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .ml-visualization {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0284c7;
+            border-radius: 0.75rem;
+        }
+        
+        .insight-card {
+            background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%);
+            border: 1px solid #d4d4d8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-brain text-purple-600 mr-3"></i>
+                        ML Analytics
+                    </h1>
+                    <p class="text-gray-600 mt-2">Inteligência Artificial para análise preditiva e segmentação de clientes</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="trainModelsBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>
+                        Treinar Modelos
+                    </button>
+                    <button id="generateInsightsBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        Gerar Insights
+                    </button>
+                </div>
+            </div>
+            
+            <!-- ML Status Overview -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600" id="modelsTrainedCount">0</div>
+                    <div class="text-sm text-purple-700">Modelos Treinados</div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="predictionsCount">0</div>
+                    <div class="text-sm text-blue-700">Predições Ativas</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="segmentsCount">0</div>
+                    <div class="text-sm text-green-700">Segmentos Identificados</div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-600" id="accuracyScore">0%</div>
+                    <div class="text-sm text-yellow-700">Precisão Média</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="churnRiskCount">0</div>
+                    <div class="text-sm text-red-700">Clientes em Risco</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-sm mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6">
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm tab-active" data-tab="predictions">
+                        <i class="fas fa-crystal-ball mr-2"></i>Predições
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="segmentation">
+                        <i class="fas fa-users mr-2"></i>Segmentação
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="recommendations">
+                        <i class="fas fa-magic mr-2"></i>Recomendações
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="insights">
+                        <i class="fas fa-chart-line mr-2"></i>Insights
+                    </button>
+                    <button class="tab-btn py-4 px-2 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300" data-tab="models">
+                        <i class="fas fa-cogs mr-2"></i>Modelos
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Predições Tab -->
+            <div id="predictions-content" class="tab-pane active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Churn Prediction -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Predição de Churn</h3>
+                            <button id="runChurnPredictionBtn" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors">
+                                <i class="fas fa-play mr-1"></i>Executar
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Cliente para Análise</label>
+                                <select id="churnClientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <option value="">Selecione um cliente</option>
+                                </select>
+                            </div>
+                            
+                            <div id="churnPredictionResult" class="hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-600">Probabilidade de Churn</span>
+                                    <span id="churnProbability" class="font-semibold">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                                    <div id="churnProgressBar" class="bg-red-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                                
+                                <div id="churnFactors" class="space-y-2">
+                                    <!-- Fatores de risco serão inseridos aqui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LTV Prediction -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Predição de LTV</h3>
+                            <button id="runLTVPredictionBtn" class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition-colors">
+                                <i class="fas fa-play mr-1"></i>Executar
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Cliente para Análise</label>
+                                <select id="ltvClientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    <option value="">Selecione um cliente</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Horizonte Temporal (dias)</label>
+                                <input type="number" id="ltvTimeHorizon" value="365" min="30" max="1095" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            
+                            <div id="ltvPredictionResult" class="hidden">
+                                <div class="text-center mb-4">
+                                    <div class="text-3xl font-bold text-green-600" id="ltvValue">R$ 0,00</div>
+                                    <div class="text-sm text-gray-600">Lifetime Value Estimado</div>
+                                </div>
+                                
+                                <div id="ltvFactors" class="space-y-2">
+                                    <!-- Fatores de LTV serão inseridos aqui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Purchase Prediction -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Predição de Próxima Compra</h3>
+                        <button id="runNextPurchaseBtn" class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-play mr-1"></i>Executar Análise
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                            <select id="nextPurchaseClientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Selecione um cliente</option>
+                            </select>
+                        </div>
+                        
+                        <div id="nextPurchaseResult" class="hidden lg:col-span-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-600" id="nextPurchaseDays">0</div>
+                                    <div class="text-sm text-gray-600">Dias Estimados</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-600" id="nextPurchaseProbability">0%</div>
+                                    <div class="text-sm text-gray-600">Probabilidade</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Batch Predictions -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Análise em Lote</h3>
+                        <button id="runBatchPredictionsBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-bolt mr-2"></i>Analisar Todos os Clientes
+                        </button>
+                    </div>
+                    
+                    <div id="batchPredictionsProgress" class="hidden mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Progresso da Análise</span>
+                            <span class="text-sm text-gray-500" id="batchProgressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" id="batchProgressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="batchPredictionsResults" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-red-50 p-4 rounded-lg">
+                                <div class="text-xl font-bold text-red-600" id="highRiskCount">0</div>
+                                <div class="text-sm text-red-700">Alto Risco de Churn</div>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <div class="text-xl font-bold text-green-600" id="highLTVCount">0</div>
+                                <div class="text-sm text-green-700">Alto LTV (>R$ 2.500)</div>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <div class="text-xl font-bold text-blue-600" id="imminentPurchaseCount">0</div>
+                                <div class="text-sm text-blue-700">Compra Iminente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segmentação Tab -->
+            <div id="segmentation-content" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Segment Distribution -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Distribuição de Segmentos</h3>
+                            <button id="runSegmentationBtn" class="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 transition-colors">
+                                <i class="fas fa-play mr-1"></i>Segmentar
+                            </button>
+                        </div>
+                        
+                        <div class="ml-visualization p-4">
+                            <canvas id="segmentChart" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Segment Details -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Detalhes dos Segmentos</h3>
+                        
+                        <div id="segmentDetails" class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                                    <div>
+                                        <div class="font-medium text-green-900">Alto Valor</div>
+                                        <div class="text-sm text-green-700">Clientes premium</div>
+                                    </div>
+                                </div>
+                                <div class="text-green-600 font-semibold" id="highValueCount">0</div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+                                    <div>
+                                        <div class="font-medium text-blue-900">Leais</div>
+                                        <div class="text-sm text-blue-700">Relacionamento longo</div>
+                                    </div>
+                                </div>
+                                <div class="text-blue-600 font-semibold" id="loyalCount">0</div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
+                                    <div>
+                                        <div class="font-medium text-yellow-900">Em Risco</div>
+                                        <div class="text-sm text-yellow-700">Necessitam atenção</div>
+                                    </div>
+                                </div>
+                                <div class="text-yellow-600 font-semibold" id="atRiskCount">0</div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 bg-purple-500 rounded-full mr-3"></div>
+                                    <div>
+                                        <div class="font-medium text-purple-900">Novos</div>
+                                        <div class="text-sm text-purple-700">Clientes recentes</div>
+                                    </div>
+                                </div>
+                                <div class="text-purple-600 font-semibold" id="newCount">0</div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+                                    <div>
+                                        <div class="font-medium text-red-900">Perdidos</div>
+                                        <div class="text-sm text-red-700">Inativos</div>
+                                    </div>
+                                </div>
+                                <div class="text-red-600 font-semibold" id="churned Count">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Client Segmentation -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Segmentação Individual</h3>
+                        <button id="segmentClientBtn" class="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-user-tag mr-1"></i>Segmentar
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                            <select id="segmentClientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Selecione um cliente</option>
+                            </select>
+                        </div>
+                        
+                        <div id="clientSegmentResult" class="hidden lg:col-span-2">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <div id="segmentColor" class="w-4 h-4 rounded-full mr-2"></div>
+                                        <span id="segmentName" class="font-semibold"></span>
+                                    </div>
+                                    <div id="segmentDescription" class="text-sm text-gray-600"></div>
+                                </div>
+                                <div class="text-center">
+                                    <div id="segmentConfidence" class="text-2xl font-bold text-indigo-600">0%</div>
+                                    <div class="text-sm text-gray-600">Confiança</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendações Tab -->
+            <div id="recommendations-content" class="tab-pane hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Gerar Recomendações</h3>
+                        <button id="generateRecommendationsBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-magic mr-2"></i>Gerar Recomendações
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Cliente</label>
+                            <select id="recommendationClientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="">Selecione um cliente</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Recomendação</label>
+                            <select id="recommendationType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="general">Geral</option>
+                                <option value="retention">Retenção</option>
+                                <option value="upsell">Upsell</option>
+                                <option value="engagement">Engajamento</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="recommendationsResults" class="space-y-4">
+                    <!-- Recomendações serão inseridas aqui -->
+                </div>
+            </div>
+
+            <!-- Insights Tab -->
+            <div id="insights-content" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Business Insights -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Insights de Negócio</h3>
+                        
+                        <div id="businessInsights" class="space-y-4">
+                            <div class="insight-card p-4 rounded-lg">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-chart-line text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Taxa de Churn</h4>
+                                        <p class="text-sm text-gray-600 mt-1">A taxa média de churn está em <span id="avgChurnRate">0%</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="insight-card p-4 rounded-lg">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-dollar-sign text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">LTV Médio</h4>
+                                        <p class="text-sm text-gray-600 mt-1">O LTV médio dos clientes é <span id="avgLTV">R$ 0,00</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="insight-card p-4 rounded-lg">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-users text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Segmento Dominante</h4>
+                                        <p class="text-sm text-gray-600 mt-1">O segmento <span id="topSegmentName">-</span> representa <span id="topSegmentPercentage">0%</span> da base</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance dos Modelos</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Modelo de Churn</div>
+                                    <div class="text-sm text-gray-600">Precisão na predição</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-blue-600" id="churnModelAccuracy">0%</div>
+                                    <div class="text-xs text-gray-500">Accuracy</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Segmentação</div>
+                                    <div class="text-sm text-gray-600">Qualidade dos clusters</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-green-600" id="segmentationScore">0.0</div>
+                                    <div class="text-xs text-gray-500">Silhouette</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Recomendações</div>
+                                    <div class="text-sm text-gray-600">Taxa de acerto</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-purple-600" id="recommendationHitRate">0%</div>
+                                    <div class="text-xs text-gray-500">Hit Rate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Analytics -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Análise Avançada</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="ml-visualization p-4">
+                            <h4 class="font-medium text-gray-900 mb-3">Distribuição de Risco de Churn</h4>
+                            <canvas id="churnDistributionChart" width="400" height="200"></canvas>
+                        </div>
+                        
+                        <div class="ml-visualization p-4">
+                            <h4 class="font-medium text-gray-900 mb-3">Distribuição de LTV</h4>
+                            <canvas id="ltvDistributionChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modelos Tab -->
+            <div id="models-content" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Model Training -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Treinamento de Modelos</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Modelo de Churn</div>
+                                    <div class="text-sm text-gray-600">Rede neural para predição de churn</div>
+                                </div>
+                                <button id="trainChurnModelBtn" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-play mr-1"></i>Treinar
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Segmentação K-Means</div>
+                                    <div class="text-sm text-gray-600">Clustering para segmentação</div>
+                                </div>
+                                <button id="trainSegmentationBtn" class="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 transition-colors">
+                                    <i class="fas fa-play mr-1"></i>Treinar
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                                <div>
+                                    <div class="font-medium text-gray-900">Sistema de Recomendação</div>
+                                    <div class="text-sm text-gray-600">Collaborative filtering</div>
+                                </div>
+                                <button id="trainRecommendationBtn" class="bg-purple-600 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-play mr-1"></i>Treinar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Training Progress -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Progresso do Treinamento</h3>
+                        
+                        <div id="trainingProgress" class="space-y-4">
+                            <div class="text-center text-gray-500 py-8">
+                                <i class="fas fa-brain text-4xl mb-3"></i>
+                                <p>Nenhum treinamento em andamento</p>
+                            </div>
+                        </div>
+                        
+                        <div id="trainingLog" class="hidden">
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+                                <div id="trainingLogContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Management -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Gerenciamento de Modelos</h3>
+                        <div class="flex space-x-2">
+                            <button id="saveModelsBtn" class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-1"></i>Salvar
+                            </button>
+                            <button id="loadModelsBtn" class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition-colors">
+                                <i class="fas fa-upload mr-1"></i>Carregar
+                            </button>
+                            <button id="clearPredictionsBtn" class="bg-gray-600 text-white px-3 py-1 rounded-md text-sm hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-trash mr-1"></i>Limpar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-gray-700" id="trainingDataCount">0</div>
+                            <div class="text-sm text-gray-600">Registros de Treinamento</div>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-blue-600" id="modelSize">0 MB</div>
+                            <div class="text-sm text-blue-700">Tamanho dos Modelos</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-green-600" id="lastTrainingDate">Nunca</div>
+                            <div class="text-sm text-green-700">Último Treinamento</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p class="text-gray-700" id="loadingText">Processando...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="ml-analytics-manager.js"></script>
+    <script>
+        class MLAnalyticsController {
+            constructor() {
+                this.manager = window.mlAnalyticsManager;
+                this.currentTab = 'predictions';
+                this.charts = {};
+                
+                this.init();
+            }
+
+            async init() {
+                this.initEventListeners();
+                this.initTabs();
+                await this.loadInitialData();
+                this.startStatusUpdates();
+            }
+
+            initEventListeners() {
+                // Tab navigation
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.switchTab(e.target.dataset.tab);
+                    });
+                });
+
+                // Training
+                document.getElementById('trainModelsBtn').addEventListener('click', () => {
+                    this.trainAllModels();
+                });
+
+                // Predictions
+                document.getElementById('runChurnPredictionBtn').addEventListener('click', () => {
+                    this.runChurnPrediction();
+                });
+                
+                document.getElementById('runLTVPredictionBtn').addEventListener('click', () => {
+                    this.runLTVPrediction();
+                });
+                
+                document.getElementById('runNextPurchaseBtn').addEventListener('click', () => {
+                    this.runNextPurchasePrediction();
+                });
+                
+                document.getElementById('runBatchPredictionsBtn').addEventListener('click', () => {
+                    this.runBatchPredictions();
+                });
+
+                // Segmentation
+                document.getElementById('runSegmentationBtn').addEventListener('click', () => {
+                    this.runSegmentationAnalysis();
+                });
+                
+                document.getElementById('segmentClientBtn').addEventListener('click', () => {
+                    this.segmentIndividualClient();
+                });
+
+                // Recommendations
+                document.getElementById('generateRecommendationsBtn').addEventListener('click', () => {
+                    this.generateRecommendations();
+                });
+
+                // Insights
+                document.getElementById('generateInsightsBtn').addEventListener('click', () => {
+                    this.generateInsights();
+                });
+
+                // Model management
+                document.getElementById('trainChurnModelBtn').addEventListener('click', () => {
+                    this.trainSpecificModel('churn');
+                });
+                
+                document.getElementById('trainSegmentationBtn').addEventListener('click', () => {
+                    this.trainSpecificModel('segmentation');
+                });
+                
+                document.getElementById('trainRecommendationBtn').addEventListener('click', () => {
+                    this.trainSpecificModel('recommendation');
+                });
+                
+                document.getElementById('saveModelsBtn').addEventListener('click', () => {
+                    this.saveModels();
+                });
+                
+                document.getElementById('loadModelsBtn').addEventListener('click', () => {
+                    this.loadModels();
+                });
+                
+                document.getElementById('clearPredictionsBtn').addEventListener('click', () => {
+                    this.clearPredictions();
+                });
+            }
+
+            initTabs() {
+                this.switchTab('predictions');
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+                
+                const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+                activeBtn.classList.add('tab-active');
+                activeBtn.classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+
+                // Update tab content
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.add('hidden');
+                    pane.classList.remove('active');
+                });
+                
+                const activePane = document.getElementById(`${tabName}-content`);
+                activePane.classList.remove('hidden');
+                activePane.classList.add('active');
+
+                this.currentTab = tabName;
+            }
+
+            async loadInitialData() {
+                this.showLoading('Carregando dados iniciais...');
+                
+                try {
+                    await this.loadClientSelects();
+                    this.updateOverviewStats();
+                } catch (error) {
+                    this.showError('Erro ao carregar dados: ' + error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async loadClientSelects() {
+                // Carregar lista de clientes para os selects
+                const selects = [
+                    'churnClientSelect',
+                    'ltvClientSelect', 
+                    'nextPurchaseClientSelect',
+                    'segmentClientSelect',
+                    'recommendationClientSelect'
+                ];
+                
+                try {
+                    if (this.manager.db) {
+                        const snapshot = await this.manager.db.collection('clientes').limit(100).get();
+                        const clients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        
+                        selects.forEach(selectId => {
+                            const select = document.getElementById(selectId);
+                            select.innerHTML = '<option value="">Selecione um cliente</option>';
+                            
+                            clients.forEach(client => {
+                                const option = document.createElement('option');
+                                option.value = client.id;
+                                option.textContent = `${client.nome} ${client.sobrenome || ''}`.trim();
+                                select.appendChild(option);
+                            });
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar clientes:', error);
+                }
+            }
+
+            async trainAllModels() {
+                this.showLoading('Treinando todos os modelos...');
+                
+                try {
+                    await this.manager.trainModels();
+                    this.showSuccess('Todos os modelos foram treinados com sucesso!');
+                    this.updateOverviewStats();
+                } catch (error) {
+                    this.showError('Erro no treinamento: ' + error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async runChurnPrediction() {
+                const clientId = document.getElementById('churnClientSelect').value;
+                if (!clientId) {
+                    this.showError('Selecione um cliente');
+                    return;
+                }
+                
+                this.showLoading('Analisando risco de churn...');
+                
+                try {
+                    const result = await this.manager.predictChurn(clientId);
+                    this.displayChurnResult(result);
+                } catch (error) {
+                    this.showError('Erro na predição: ' + error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            displayChurnResult(result) {
+                const resultDiv = document.getElementById('churnPredictionResult');
+                const probability = Math.round(result.churnProbability * 100);
+                
+                document.getElementById('churnProbability').textContent = `${probability}%`;
+                document.getElementById('churnProgressBar').style.width = `${probability}%`;
+                
+                // Alterar cor baseada no risco
+                const progressBar = document.getElementById('churnProgressBar');
+                if (probability > 70) {
+                    progressBar.className = 'bg-red-600 h-2 rounded-full transition-all duration-300';
+                } else if (probability > 40) {
+                    progressBar.className = 'bg-yellow-600 h-2 rounded-full transition-all duration-300';
+                } else {
+                    progressBar.className = 'bg-green-600 h-2 rounded-full transition-all duration-300';
+                }
+                
+                // Exibir fatores
+                const factorsDiv = document.getElementById('churnFactors');
+                factorsDiv.innerHTML = '';
+                
+                result.factors.forEach(factor => {
+                    const factorDiv = document.createElement('div');
+                    factorDiv.className = 'flex items-center justify-between p-2 bg-gray-50 rounded text-sm';
+                    factorDiv.innerHTML = `
+                        <span>${factor.factor}</span>
+                        <span class="text-${factor.impact === 'Alto' ? 'red' : factor.impact === 'Médio' ? 'yellow' : 'green'}-600 font-medium">${factor.impact}</span>
+                    `;
+                    factorsDiv.appendChild(factorDiv);
+                });
+                
+                resultDiv.classList.remove('hidden');
+            }
+
+            async runLTVPrediction() {
+                const clientId = document.getElementById('ltvClientSelect').value;
+                const timeHorizon = parseInt(document.getElementById('ltvTimeHorizon').value);
+                
+                if (!clientId) {
+                    this.showError('Selecione um cliente');
+                    return;
+                }
+                
+                this.showLoading('Calculando LTV...');
+                
+                try {
+                    const result = await this.manager.predictLTV(clientId, timeHorizon);
+                    this.displayLTVResult(result);
+                } catch (error) {
+                    this.showError('Erro na predição: ' + error.message);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            displayLTVResult(result) {
+                const resultDiv = document.getElementById('ltvPredictionResult');
+                
+                document.getElementById('ltvValue').textContent = 
+                    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(result.predictedLTV);
+                
+                // Exibir fatores
+                const factorsDiv = document.getElementById('ltvFactors');
+                factorsDiv.innerHTML = '';
+                
+                Object.entries(result.factors).forEach(([key, value]) => {
+                    const factorDiv = document.createElement('div');
+                    factorDiv.className = 'flex items-center justify-between p-2 bg-gray-50 rounded text-sm';
+                    factorDiv.innerHTML = `
+                        <span>${this.translateLTVFactor(key)}</span>
+                        <span class="font-medium">${this.formatLTVFactorValue(key, value)}</span>
+                    `;
+                    factorsDiv.appendChild(factorDiv);
+                });
+                
+                resultDiv.classList.remove('hidden');
+            }
+
+            translateLTVFactor(key) {
+                const translations = {
+                    'avgPurchaseValue': 'Valor Médio de Compra',
+                    'purchaseFrequency': 'Frequência de Compra',
+                    'satisfaction': 'Satisfação',
+                    'loyalty': 'Lealdade (dias)'
+                };
+                return translations[key] || key;
+            }
+
+            formatLTVFactorValue(key, value) {
+                if (key === 'avgPurchaseValue') {
+                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+                }
+                if (key === 'satisfaction') {
+                    return `${value.toFixed(1)}/5.0`;
+                }
+                if (key === 'loyalty') {
+                    return `${Math.round(value)} dias`;
+                }
+                return value.toFixed(2);
+            }
+
+            updateOverviewStats() {
+                // Atualizar estatísticas do overview
+                const performance = this.manager.getModelPerformance();
+                const predictions = this.manager.getPredictionSummary();
+                
+                document.getElementById('modelsTrainedCount').textContent = 
+                    Object.values(performance).filter(p => p.accuracy > 0).length;
+                    
+                document.getElementById('predictionsCount').textContent = 
+                    predictions.churn + predictions.ltv + predictions.nextPurchase;
+                    
+                document.getElementById('accuracyScore').textContent = 
+                    `${Math.round(performance.churn.accuracy * 100)}%`;
+                    
+                // Contar clientes em risco (exemplo)
+                document.getElementById('churnRiskCount').textContent = 
+                    Array.from(this.manager.predictions.churn.values()).filter(p => p.churnProbability > 0.7).length;
+            }
+
+            startStatusUpdates() {
+                setInterval(() => {
+                    this.updateOverviewStats();
+                }, 30000); // Atualizar a cada 30 segundos
+            }
+
+            showLoading(message = 'Carregando...') {
+                document.getElementById('loadingText').textContent = message;
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+                document.getElementById('loadingOverlay').classList.add('flex');
+            }
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('flex');
+            }
+
+            showSuccess(message) {
+                console.log('Success:', message);
+                alert('✅ ' + message);
+            }
+
+            showError(message) {
+                console.error('Error:', message);
+                alert('❌ ' + message);
+            }
+        }
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "sua-api-key",
+            authDomain: "seu-projeto.firebaseapp.com",
+            projectId: "seu-projeto-id",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "sua-app-id"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        // Initialize Controller
+        document.addEventListener('DOMContentLoaded', () => {
+            window.mlController = new MLAnalyticsController();
+        });
+    </script>
+</body>
+</html>

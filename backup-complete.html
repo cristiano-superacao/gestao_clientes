@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Backup - Gestão de Clientes</title>
+    
+    <!-- External Resources -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+
+        .backup-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border: 1px solid #e5e7eb;
+        }
+
+        .backup-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .backup-button {
+            background: linear-gradient(135deg, var(--success) 0%, #065f46 100%);
+            transition: all 0.3s ease;
+        }
+
+        .backup-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px -5px rgba(5, 150, 105, 0.3);
+        }
+
+        .backup-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .setting-toggle {
+            transition: all 0.2s ease;
+        }
+
+        .setting-toggle:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .backup-item {
+            transition: all 0.2s ease;
+        }
+
+        .backup-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .frequency-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .frequency-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .frequency-option.selected {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .backup-type-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .backup-type-card:hover {
+            transform: scale(1.02);
+        }
+
+        .backup-type-card.selected {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .schedule-info {
+            background: linear-gradient(135deg, #ddd6fe 0%, #e0e7ff 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-primary hover:text-primary-light transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-xl font-semibold text-gray-900">Sistema de Backup</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="import-complete.html" 
+                       class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                        </svg>
+                        Import
+                    </a>
+                    <a href="export-complete.html" 
+                       class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Export
+                    </a>
+                    <a href="dashboard-complete.html" 
+                       class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Sistema de Backup Automático</h2>
+            <p class="text-gray-600 mt-2">Proteja seus dados com backups automáticos e restauração inteligente</p>
+        </div>
+
+        <!-- Backup Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Auto Backup Status -->
+            <div class="backup-card rounded-xl p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <div class="status-indicator w-3 h-3 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Backup Automático</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="backup-auto-status">Carregando...</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Backup -->
+            <div class="backup-card rounded-xl p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Último Backup</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="backup-last">Carregando...</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Backup -->
+            <div class="backup-card rounded-xl p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Próximo Backup</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="backup-next">Carregando...</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Backups -->
+            <div class="backup-card rounded-xl p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total de Backups</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="backup-total">0</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Create Backup -->
+            <div class="backup-card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Criar Backup Manual</h3>
+                <p class="text-gray-600 mb-6">Crie um backup instantâneo dos seus dados</p>
+                
+                <div class="space-y-4 mb-6">
+                    <!-- Backup Type Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Tipo de Backup</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="backup-type-card selected border-2 border-primary rounded-lg p-3 text-center" data-type="cloud">
+                                <div class="text-2xl mb-2">☁️</div>
+                                <div class="text-sm font-medium">Nuvem</div>
+                                <div class="text-xs text-gray-500">Firebase Storage</div>
+                            </div>
+                            <div class="backup-type-card border-2 border-gray-200 rounded-lg p-3 text-center" data-type="local">
+                                <div class="text-2xl mb-2">💾</div>
+                                <div class="text-sm font-medium">Local</div>
+                                <div class="text-xs text-gray-500">Download direto</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Backup Options -->
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Compressão</span>
+                            <input type="checkbox" id="backup-compression" class="setting-toggle rounded" checked>
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Incluir Dados do Sistema</span>
+                            <input type="checkbox" id="backup-system-data" class="setting-toggle rounded">
+                        </label>
+                    </div>
+                </div>
+
+                <button id="create-backup-btn" class="backup-button w-full text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3 3V8"/>
+                    </svg>
+                    Criar Backup Agora
+                </button>
+
+                <!-- Progress Bar -->
+                <div id="backup-progress" class="mt-4 hidden">
+                    <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                        <span id="backup-progress-text">Criando backup...</span>
+                        <span id="backup-progress-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="backup-progress-bar progress-bar bg-success h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto Backup Settings -->
+            <div class="backup-card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Configurações Automáticas</h3>
+                <p class="text-gray-600 mb-6">Configure backups automáticos para proteger seus dados</p>
+                
+                <div class="space-y-4">
+                    <!-- Enable Auto Backup -->
+                    <label class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900">Backup Automático</span>
+                            <p class="text-xs text-gray-500">Ativar backups agendados</p>
+                        </div>
+                        <input type="checkbox" id="auto-backup-enabled" class="setting-toggle rounded" checked>
+                    </label>
+
+                    <!-- Frequency Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Frequência</label>
+                        <div class="space-y-2">
+                            <div class="frequency-option selected rounded-lg px-3 py-2 text-sm font-medium" data-frequency="daily">
+                                🗓️ Diário (recomendado)
+                            </div>
+                            <div class="frequency-option rounded-lg px-3 py-2 text-sm font-medium" data-frequency="weekly">
+                                📅 Semanal
+                            </div>
+                            <div class="frequency-option rounded-lg px-3 py-2 text-sm font-medium" data-frequency="monthly">
+                                🗓️ Mensal
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Retention Policy -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Retenção de Backups</label>
+                        <select id="retention-days" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="7">7 dias</option>
+                            <option value="15">15 dias</option>
+                            <option value="30" selected>30 dias</option>
+                            <option value="60">60 dias</option>
+                            <option value="90">90 dias</option>
+                            <option value="0">Nunca deletar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Schedule Info -->
+                <div class="schedule-info mt-6 p-4 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-sm font-medium text-purple-800">Próximo Backup Agendado</span>
+                    </div>
+                    <p class="text-sm text-purple-700" id="next-backup-info">
+                        Backup diário às 02:00 (horário local)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup History -->
+        <div class="backup-card rounded-xl p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Histórico de Backups</h3>
+                <div class="flex space-x-2">
+                    <button id="refresh-history-btn" class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                    <button id="cleanup-old-btn" class="px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                        Limpar Antigos
+                    </button>
+                </div>
+            </div>
+            
+            <div id="backup-history-list" class="space-y-3">
+                <!-- Loaded by JavaScript -->
+                <div class="flex items-center justify-center py-12">
+                    <div class="text-center">
+                        <div class="loading-spinner w-8 h-8 border-2 border-gray-300 border-t-primary rounded-full mx-auto mb-4"></div>
+                        <p class="text-gray-500">Carregando histórico de backups...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restore Section -->
+        <div class="backup-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Restaurar Dados</h3>
+            <p class="text-gray-600 mb-6">Restaure seus dados a partir de um backup anterior</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Restore Options -->
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-3">Opções de Restauração</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="setting-toggle rounded mr-3" checked>
+                            <span class="text-sm text-gray-700">Restaurar Clientes</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="setting-toggle rounded mr-3" checked>
+                            <span class="text-sm text-gray-700">Restaurar Configurações</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="setting-toggle rounded mr-3">
+                            <span class="text-sm text-gray-700">Recarregar Página Após Restaurar</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Upload Backup File -->
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-3">Restaurar de Arquivo</h4>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                        </svg>
+                        <p class="text-sm text-gray-600 mb-2">Arraste um arquivo de backup aqui</p>
+                        <p class="text-xs text-gray-500">ou clique para selecionar</p>
+                        <input type="file" id="restore-file-input" class="hidden" accept=".json">
+                        <button onclick="document.getElementById('restore-file-input').click()" 
+                                class="mt-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-light transition-colors">
+                            Selecionar Arquivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-yellow-800">Atenção</h4>
+                        <p class="text-sm text-yellow-700 mt-1">
+                            A restauração substituirá todos os dados atuais. Certifique-se de ter um backup recente antes de prosseguir.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // System Configuration
+        window.__app_id = 'gestao-clientes-senai';
+        window.__firebase_config = {}; // Will use local storage if empty
+
+        let backupManager = null;
+
+        // Initialize Backup System
+        async function initializeBackupSystem() {
+            const { BackupManager } = await import('./assets/js/backup-manager.js');
+            
+            const config = typeof window.__firebase_config === 'string' 
+                ? JSON.parse(window.__firebase_config) 
+                : window.__firebase_config || {};
+                
+            backupManager = new BackupManager(window.__app_id, config);
+            await backupManager.initialize();
+            
+            setupEventListeners();
+            updateUI();
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Backup type selection
+            document.querySelectorAll('.backup-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.backup-type-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            // Frequency selection
+            document.querySelectorAll('.frequency-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.frequency-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    const frequency = this.dataset.frequency;
+                    backupManager.updateSettings({ frequency });
+                    updateScheduleInfo(frequency);
+                });
+            });
+
+            // Settings
+            document.getElementById('auto-backup-enabled').addEventListener('change', function() {
+                backupManager.updateSettings({ autoBackup: this.checked });
+            });
+
+            document.getElementById('retention-days').addEventListener('change', function() {
+                backupManager.updateSettings({ retentionDays: parseInt(this.value) });
+            });
+
+            // Action buttons
+            document.getElementById('create-backup-btn').addEventListener('click', createManualBackup);
+            document.getElementById('refresh-history-btn').addEventListener('click', refreshHistory);
+            document.getElementById('cleanup-old-btn').addEventListener('click', cleanupOldBackups);
+
+            // File restore
+            document.getElementById('restore-file-input').addEventListener('change', handleRestoreFile);
+        }
+
+        // Create manual backup
+        async function createManualBackup() {
+            const button = document.getElementById('create-backup-btn');
+            const progressDiv = document.getElementById('backup-progress');
+            
+            try {
+                // Get selected options
+                const selectedType = document.querySelector('.backup-type-card.selected').dataset.type;
+                const compression = document.getElementById('backup-compression').checked;
+                const includeSystemData = document.getElementById('backup-system-data').checked;
+
+                // Show progress
+                progressDiv.classList.remove('hidden');
+                button.disabled = true;
+                button.innerHTML = `
+                    <div class="loading-spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    Criando Backup...
+                `;
+
+                // Create backup
+                const options = {
+                    backupLocation: selectedType,
+                    compression,
+                    includeSystemData
+                };
+
+                await backupManager.createBackup(options);
+
+            } catch (error) {
+                console.error('Erro ao criar backup:', error);
+                backupManager.showNotification('Erro ao criar backup: ' + error.message, 'error');
+            } finally {
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = `
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3 3V8"/>
+                    </svg>
+                    Criar Backup Agora
+                `;
+                
+                // Hide progress after delay
+                setTimeout(() => {
+                    progressDiv.classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        // Refresh backup history
+        async function refreshHistory() {
+            try {
+                await backupManager.loadBackupHistory();
+                backupManager.updateUI();
+                backupManager.showNotification('Histórico atualizado', 'success');
+            } catch (error) {
+                backupManager.showNotification('Erro ao atualizar histórico', 'error');
+            }
+        }
+
+        // Cleanup old backups
+        async function cleanupOldBackups() {
+            if (!confirm('Tem certeza que deseja deletar backups antigos? Esta ação não pode ser revertida.')) {
+                return;
+            }
+
+            try {
+                await backupManager.cleanupOldBackups();
+                backupManager.showNotification('Backups antigos removidos com sucesso', 'success');
+            } catch (error) {
+                backupManager.showNotification('Erro ao limpar backups antigos', 'error');
+            }
+        }
+
+        // Handle restore file upload
+        function handleRestoreFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.json')) {
+                backupManager.showNotification('Formato de arquivo inválido. Use arquivos .json', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    if (!backupManager.validateBackup(backupData)) {
+                        backupManager.showNotification('Arquivo de backup inválido', 'error');
+                        return;
+                    }
+
+                    if (confirm('Tem certeza que deseja restaurar este backup? Todos os dados atuais serão substituídos.')) {
+                        await backupManager.restoreData(backupData, {
+                            restoreClientes: true,
+                            restoreSettings: true,
+                            reloadAfterRestore: true
+                        });
+                    }
+                } catch (error) {
+                    backupManager.showNotification('Erro ao processar arquivo de backup', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Update schedule info
+        function updateScheduleInfo(frequency) {
+            const scheduleInfo = document.getElementById('next-backup-info');
+            const scheduleTexts = {
+                daily: 'Backup diário às 02:00 (horário local)',
+                weekly: 'Backup semanal às 02:00 de domingo',
+                monthly: 'Backup mensal no dia 1 às 02:00'
+            };
+            scheduleInfo.textContent = scheduleTexts[frequency] || scheduleTexts.daily;
+        }
+
+        // Update UI
+        function updateUI() {
+            if (backupManager) {
+                backupManager.updateUI();
+            }
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', initializeBackupSystem);
+    </script>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+</body>
+</html>
