@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema completo de gestão de clientes - SENAI">
+    <meta name="description" content="Sistema completo de gestão de clientes - versão Netlify otimizada">
     <title>Gestão de Clientes - SENAI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -45,7 +45,7 @@
     </script>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
-    
+
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="text-center">
@@ -218,7 +218,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h2 class="text-xl font-semibold text-gray-800 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 6a3 3 0 11-6 0 3 3 0 616 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
                     </svg>
                     Clientes Recentes
                 </h2>
@@ -241,168 +241,199 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-12">
-        <div class="container mx-auto px-6">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <h3 class="text-lg font-bold">Sistema de Gestão de Clientes</h3>
-                    <p class="text-gray-400 text-sm">SENAI - Curso Bar e Restaurante</p>
-                </div>
-                <div class="text-sm text-gray-400">
-                    <p>Versão 3.0.0 | Desenvolvido com ❤️</p>
-                    <p class="mt-1">
-                        <span class="inline-flex items-center">
-                            <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                            Sistema Online
-                        </span>
-                    </p>
-                </div>
-            </div>
+    <!-- Modals e Loaders -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="text-white text-lg flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Inicializando...
         </div>
-    </footer>
+    </div>
 
-    <!-- Scripts -->
-    <script>
-        // Update loading status
-        function updateLoadingStatus(message) {
-            const statusEl = document.getElementById('loading-status');
-            if (statusEl) statusEl.textContent = message;
-        }
+    <!-- Script principal com lógica Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, addDoc, serverTimestamp, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Hide loading overlay
-        function hideLoading() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.style.opacity = '0';
-                setTimeout(() => overlay.style.display = 'none', 300);
-            }
-        }
+        // Variáveis globais (fornecidas pelo ambiente Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Load demo clients
-        function loadDemoClients() {
-            const demoClients = [
-                {
-                    id: '1',
-                    name: 'João Silva',
-                    email: 'joao@email.com',
-                    phone: '(11) 99999-9999',
-                    status: 'ativo',
-                    created: new Date().toLocaleDateString('pt-BR')
-                },
-                {
-                    id: '2', 
-                    name: 'Maria Santos',
-                    email: 'maria@email.com',
-                    phone: '(11) 88888-8888',
-                    status: 'pendente',
-                    created: new Date().toLocaleDateString('pt-BR')
-                },
-                {
-                    id: '3',
-                    name: 'Pedro Oliveira',
-                    email: 'pedro@email.com',
-                    phone: '(11) 77777-7777',
-                    status: 'ativo',
-                    created: new Date().toLocaleDateString('pt-BR')
-                },
-                {
-                    id: '4',
-                    name: 'Ana Costa',
-                    email: 'ana@email.com',
-                    phone: '(11) 66666-6666',
-                    status: 'ativo',
-                    created: new Date().toLocaleDateString('pt-BR')
-                }
-            ];
+        let app, db, auth, userId = null;
 
-            const container = document.getElementById('clients-container');
-            container.innerHTML = '';
+        // Configuração para log de depuração do Firestore
+        setLogLevel('debug');
+        
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const userInfoEl = document.getElementById('user-info');
+        const profileStatusEl = document.getElementById('profile-status');
+        const profileDataEl = document.getElementById('profile-data');
+        const profileNameEl = document.getElementById('profile-name');
+        const profileCompanyEl = document.getElementById('profile-company');
+        const clientListEl = document.getElementById('client-list');
+        const clientErrorEl = document.getElementById('client-error');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
 
-            demoClients.forEach(client => {
-                const clientCard = document.createElement('div');
-                clientCard.className = 'border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow';
-                clientCard.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                ${client.name.charAt(0)}
-                            </div>
-                            <div>
-                                <h3 class="font-medium text-gray-900">${client.name}</h3>
-                                <p class="text-sm text-gray-600">${client.email}</p>
-                                <p class="text-sm text-gray-500">${client.phone}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                client.status === 'ativo' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-yellow-100 text-yellow-800'
-                            }">
-                                ${client.status}
-                            </span>
-                            <p class="text-xs text-gray-500 mt-1">${client.created}</p>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(clientCard);
-            });
-        }
+        // Função para carregar os dados do perfil do usuário
+        async function loadUserProfile() {
+            if (!db || !userId) return;
 
-        // Simple initialization without Firebase dependencies
-        async function initializeApp() {
+            // CORREÇÃO CRÍTICA: O caminho do documento deve ter um NÚMERO PAR de segmentos (Coleção/Documento/Coleção/Documento...).
+            // O caminho anterior '.../profile' (5 segmentos) estava incorreto.
+            // Corrigido para '.../profile/data' (6 segmentos), onde 'profile' é uma coleção e 'data' é o ID do documento.
+            // Caminho completo: artifacts/{appId}/users/{userId}/profile/data
             try {
-                updateLoadingStatus('Carregando sistema...');
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                updateLoadingStatus('Inicializando módulos...');
-                await new Promise(resolve => setTimeout(resolve, 600));
-                
-                updateLoadingStatus('Carregando dados...');
-                loadDemoClients();
-                await new Promise(resolve => setTimeout(resolve, 400));
-                
-                hideLoading();
-                console.log('✅ Sistema inicializado com sucesso!');
-                
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const profileSnap = await getDoc(profileDocRef);
+
+                if (profileSnap.exists()) {
+                    const data = profileSnap.data();
+                    profileNameEl.textContent = data.name || 'N/A';
+                    profileCompanyEl.textContent = data.company || 'N/A';
+                    profileStatusEl.textContent = 'Dados carregados.';
+                    profileDataEl.classList.remove('hidden');
+                } else {
+                    profileStatusEl.textContent = 'Perfil não encontrado. Clique em Salvar para criar um.';
+                    profileDataEl.classList.add('hidden');
+                }
             } catch (error) {
-                console.error('❌ Erro na inicialização:', error);
-                hideLoading();
+                console.error("Erro ao carregar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao carregar: ${error.message}`;
             }
         }
 
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            // Quick action buttons
-            document.getElementById('add-client-btn')?.addEventListener('click', () => {
-                window.location.href = 'index-complete.html';
-            });
+        // Função para salvar um perfil padrão
+        async function saveDefaultProfile() {
+            if (!db || !userId) return;
 
-            document.getElementById('sync-btn')?.addEventListener('click', () => {
-                alert('🔄 Função de sincronização disponível na versão completa!');
-            });
+            try {
+                // Usa o caminho corrigido
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'data');
+                const defaultData = {
+                    name: 'Usuário Gestor',
+                    company: 'Minha Empresa de Clientes',
+                    createdAt: serverTimestamp()
+                };
+                
+                // setDoc cria ou substitui o documento
+                await setDoc(profileDocRef, defaultData);
+                
+                profileNameEl.textContent = defaultData.name;
+                profileCompanyEl.textContent = defaultData.company;
+                profileStatusEl.textContent = 'Perfil padrão salvo com sucesso!';
+                profileDataEl.classList.remove('hidden');
 
-            document.getElementById('export-btn')?.addEventListener('click', () => {
-                window.location.href = 'export-complete.html';
-            });
+            } catch (error) {
+                console.error("Erro ao salvar o perfil do usuário:", error);
+                profileStatusEl.textContent = `Erro ao salvar: ${error.message}`;
+            }
+        }
+        
+        // Listener em tempo real para a lista de clientes (exemplo de dados públicos)
+        function setupClientListener() {
+            if (!db) return;
 
-            document.getElementById('backup-btn')?.addEventListener('click', () => {
-                window.location.href = 'backup-complete.html';
-            });
+            // Caminho para dados públicos de clientes: artifacts/{appId}/public/data/clients
+            const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+            
+            // onSnapshot para escutar mudanças em tempo real
+            onSnapshot(clientsColRef, (snapshot) => {
+                const clients = [];
+                snapshot.forEach(doc => {
+                    clients.push({ id: doc.id, ...doc.data() });
+                });
 
-            document.getElementById('search-btn')?.addEventListener('click', () => {
-                const query = document.getElementById('search-input').value;
-                if (query.trim()) {
-                    alert(`🔍 Busca implementada na versão completa: "${query}"`);
+                clientListEl.innerHTML = '';
+                if (clients.length === 0) {
+                    clientListEl.innerHTML = '<li class="p-4 bg-gray-50 rounded-lg text-gray-600">Nenhum cliente cadastrado.</li>';
+                } else {
+                    clients.forEach(client => {
+                        const li = document.createElement('li');
+                        li.className = 'p-4 bg-primary bg-opacity-5 rounded-lg border-l-4 border-primary shadow';
+                        li.innerHTML = `
+                            <p class="text-lg font-medium text-gray-800">${client.name || 'Cliente Sem Nome'}</p>
+                            <p class="text-sm text-gray-600">ID: ${client.id}</p>
+                            <p class="text-sm text-gray-600">Email: ${client.email || 'N/A'}</p>
+                        `;
+                        clientListEl.appendChild(li);
+                    });
                 }
+            }, (error) => {
+                console.error("Erro no listener de clientes:", error);
+                clientErrorEl.textContent = `Erro ao carregar clientes: ${error.message}`;
+                clientErrorEl.classList.remove('hidden');
             });
+        }
 
-            // Initialize the application
-            initializeApp();
-        });
+        // Inicialização do Firebase e Autenticação
+        window.onload = async function() {
+            try {
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Configuração do Firebase não fornecida.");
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autenticação
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Observador de estado de autenticação para configurar o app após o login
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userInfoEl.textContent = `Usuário ID: ${userId} (Autenticado)`;
+                        // Carregar perfil e clientes após autenticação
+                        loadUserProfile();
+                        setupClientListener();
+                    } else {
+                        userId = null;
+                        userInfoEl.textContent = 'Usuário: Anônimo (Não Autenticado)';
+                        profileStatusEl.textContent = 'Por favor, aguarde a autenticação.';
+                    }
+                    loadingOverlay.classList.add('hidden');
+                });
+
+            } catch (error) {
+                console.error("Erro na inicialização do Firebase:", error);
+                userInfoEl.textContent = `Erro de Inicialização: ${error.message}`;
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Adiciona o evento de clique ao botão Salvar Perfil
+        saveProfileBtn.addEventListener('click', saveDefaultProfile);
+        
+        // Exemplo: Função para adicionar um novo cliente (apenas para demonstração)
+        async function addExampleClient() {
+             if (!db || !userId) return;
+             try {
+                const clientsColRef = collection(db, `artifacts/${appId}/public/data/clients`);
+                await addDoc(clientsColRef, {
+                    name: `Novo Cliente ${Date.now() % 100}`,
+                    email: `client${Date.now() % 100}@example.com`,
+                    addedBy: userId,
+                    timestamp: serverTimestamp()
+                });
+                console.log("Cliente de exemplo adicionado.");
+             } catch (e) {
+                console.error("Erro ao adicionar cliente de exemplo: ", e);
+             }
+        }
+
+        // Adiciona um cliente de exemplo a cada 10 segundos
+        // setInterval(addExampleClient, 10000); 
 
     </script>
-
 </body>
 </html>
