@@ -1,0 +1,15 @@
+# Configurações de Build
+[build]
+  # Comando para instalar as dependências. O Netlify executa isso automaticamente.
+  command = "npm install"
+  # Diretório que contém os arquivos estáticos do seu site (frontend).
+  publish = "public"
+  # Diretório onde as suas funções serverless (backend) estão localizadas.
+  functions = "netlify/functions"
+
+# Redirecionamento para a API
+# Isso faz com que qualquer requisição para /api/* seja enviada para a sua função 'api'.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
