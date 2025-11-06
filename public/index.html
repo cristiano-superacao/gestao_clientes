@@ -10,6 +10,26 @@
     <h1>Bem-vindo ao Controle de Clientes</h1>
     <p>Esta é a página inicial.</p>
 
+    <div class="image-upload-section">
+        <h2>Descrever Imagem</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="imageInput">Selecione uma imagem:</label>
+                <input type="file" id="imageInput" name="image" accept="image/*" required>
+            </div>
+            <button type="submit">Enviar e Descrever</button>
+        </form>
+        
+        <div id="result" class="result-section" style="display: none;">
+            <h3>Imagem Carregada:</h3>
+            <img id="uploadedImage" alt="Imagem carregada" />
+            <h3>Descrição:</h3>
+            <div id="imageDescription"></div>
+        </div>
+        
+        <div id="error" class="error-section" style="display: none;"></div>
+    </div>
+
     <script src="/js/main.js"></script>
 </body>
 </html>
