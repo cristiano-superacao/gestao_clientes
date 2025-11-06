@@ -4,6 +4,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -23,7 +24,7 @@ const storage = multer.diskStorage({
         cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(8).toString('hex');
         cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
@@ -34,8 +35,9 @@ const upload = multer({
         fileSize: 5 * 1024 * 1024 // 5MB limit
     },
     fileFilter: function (req, file, cb) {
-        // Accept images only
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+        // Validate MIME type for images only
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
             return cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
         }
         cb(null, true);
